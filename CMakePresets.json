@@ -1,0 +1,125 @@
+{
+    "version": 3,
+    "cmakeMinimumRequired": {
+        "major": 3,
+        "minor": 15,
+        "patch": 0
+    },
+    "configurePresets": [
+        {
+            "name": "default",
+            "displayName": "Default Configuration",
+            "description": "Default build configuration",
+            "generator": "Unix Makefiles",
+            "binaryDir": "${sourceDir}/build",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "BUILD_TESTS": "ON",
+                "BUILD_BENCHMARKS": "ON"
+            }
+        },
+        {
+            "name": "debug",
+            "displayName": "Debug Build",
+            "description": "Debug build with all symbols",
+            "inherits": "default",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug"
+            }
+        },
+        {
+            "name": "xlns16-ideal",
+            "displayName": "XLNS16 Ideal Mode",
+            "description": "Build with ideal floating-point Gaussian Log for xlns16",
+            "inherits": "default",
+            "cacheVariables": {
+                "XLNS16_IDEAL": "ON"
+            }
+        },
+        {
+            "name": "xlns16-table",
+            "displayName": "XLNS16 Table Mode",
+            "description": "Build with table-based conversion for xlns16",
+            "inherits": "default",
+            "cacheVariables": {
+                "XLNS16_TABLE": "ON"
+            }
+        },
+        {
+            "name": "xlns16-alt",
+            "displayName": "XLNS16 Alternative Algorithm",
+            "description": "Build with alternative addition algorithm for xlns16",
+            "inherits": "default",
+            "cacheVariables": {
+                "XLNS16_ALT": "ON"
+            }
+        },
+        {
+            "name": "xlns16-all-opts",
+            "displayName": "XLNS16 All Optimizations",
+            "description": "Build with all xlns16 optimizations enabled",
+            "inherits": "default",
+            "cacheVariables": {
+                "XLNS16_ALT": "ON",
+                "XLNS16_TABLE": "ON"
+            }
+        },
+        {
+            "name": "xlns32-ideal",
+            "displayName": "XLNS32 Ideal Mode",
+            "description": "Build with ideal floating-point Gaussian Log for xlns32",
+            "inherits": "default",
+            "cacheVariables": {
+                "XLNS32_IDEAL": "ON"
+            }
+        },
+        {
+            "name": "xlns32-alt",
+            "displayName": "XLNS32 Alternative Algorithm",
+            "description": "Build with alternative addition algorithm for xlns32",
+            "inherits": "default",
+            "cacheVariables": {
+                "XLNS32_ALT": "ON"
+            }
+        },
+        {
+            "name": "all-ideal",
+            "displayName": "All Ideal Mode",
+            "description": "Build both xlns16 and xlns32 in ideal mode",
+            "inherits": "default",
+            "cacheVariables": {
+                "XLNS16_IDEAL": "ON",
+                "XLNS32_IDEAL": "ON"
+            }
+        },
+        {
+            "name": "minimal",
+            "displayName": "Minimal Build",
+            "description": "Minimal build without tests or benchmarks",
+            "inherits": "default",
+            "cacheVariables": {
+                "BUILD_TESTS": "OFF",
+                "BUILD_BENCHMARKS": "OFF"
+            }
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "default",
+            "configurePreset": "default"
+        },
+        {
+            "name": "debug",
+            "configurePreset": "debug"
+        }
+    ],
+    "testPresets": [
+        {
+            "name": "default",
+            "configurePreset": "default",
+            "output": {
+                "outputOnFailure": true
+            }
+        }
+    ]
+}

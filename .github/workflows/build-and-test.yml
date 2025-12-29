@@ -1,0 +1,87 @@
+name: Build and Test
+
+on:
+  push:
+    branches: [ main, feature/* ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-linux:
+    name: Build on Linux
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        compiler: [g++, clang++]
+        build_type: [Release, Debug]
+        config:
+          - name: "default"
+            flags: ""
+          - name: "xlns16-ideal"
+            flags: "-DXLNS16_IDEAL=ON"
+          - name: "xlns16-table"
+            flags: "-DXLNS16_TABLE=ON"
+          - name: "all-ideal"
+            flags: "-DXLNS16_IDEAL=ON -DXLNS32_IDEAL=ON"
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential cmake python3
+    
+    - name: Configure CMake
+      run: |
+        cmake -B build \
+          -DCMAKE_CXX_COMPILER=${{ matrix.compiler }} \
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+          ${{ matrix.config.flags }}
+    
+    - name: Build
+      run: cmake --build build --parallel
+    
+    - name: Test
+      run: |
+        cd build
+        ctest --output-on-failure --parallel
+  
+  build-macos:
+    name: Build on macOS
+    runs-on: macos-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Install dependencies
+      run: brew install cmake
+    
+    - name: Configure CMake
+      run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+    
+    - name: Build
+      run: cmake --build build --parallel
+    
+    - name: Test
+      run: |
+        cd build
+        ctest --output-on-failure --parallel
+  
+  build-windows:
+    name: Build on Windows
+    runs-on: windows-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Configure CMake
+      run: cmake -B build -G "Visual Studio 17 2022"
+    
+    - name: Build
+      run: cmake --build build --config Release
+    
+    - name: Test
+      run: |
+        cd build
+        ctest -C Release --output-on-failure

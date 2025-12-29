@@ -25,3 +25,91 @@ _14th International Workshop on Power and Timing Modeling, Optimization and Simu
 LNCS 3254, pp.675-684, Santorini, Greece, Sept. 2004.
 
 
+## Building with CMake
+
+### Quick Start
+```bash
+# Clone the repository
+git clone https://github.com/xlnsresearch/xlnscpp.git
+cd xlnscpp
+
+# Create build directory
+mkdir build && cd build
+
+# Configure and build
+cmake ..
+cmake --build .
+
+# Run tests
+ctest --output-on-failure
+```
+
+### Build Options
+
+The following CMake options are available:
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `BUILD_TESTS` | ON | Build test executables |
+| `BUILD_BENCHMARKS` | ON | Build benchmark executables |
+| `XLNS16_IDEAL` | OFF | Use ideal floating-point Gaussian Log for xlns16 |
+| `XLNS16_ALT` | OFF | Use alternative addition algorithm for xlns16 |
+| `XLNS16_TABLE` | OFF | Use table-based conversion for xlns16 |
+| `XLNS16_ALTOPT` | OFF | Use less accurate LPVIP algorithm for xlns16 |
+| `XLNS32_IDEAL` | OFF | Use ideal floating-point Gaussian Log for xlns32 |
+| `XLNS32_ALT` | OFF | Use alternative addition algorithm for xlns32 |
+
+### Using Presets
+
+CMake presets make it easy to build with specific configurations:
+```bash
+# List available presets
+cmake --list-presets
+
+# Build with a specific preset
+cmake --preset xlns16-ideal
+cmake --build --preset default
+
+# Run tests
+ctest --preset default
+```
+
+### Common Build Scenarios
+
+**Debug build:**
+```bash
+cmake --preset debug
+cmake --build --preset debug
+```
+
+**Optimized xlns16 with table lookup:**
+```bash
+cmake --preset xlns16-table
+cmake --build --preset default
+```
+
+**Both libraries in ideal mode:**
+```bash
+cmake --preset all-ideal
+cmake --build --preset default
+```
+
+### Custom Configuration
+
+For custom builds, use CMake command-line options:
+```bash
+cmake -B build \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DXLNS16_IDEAL=ON \
+    -DXLNS16_TABLE=ON \
+    -DBUILD_TESTS=ON
+cmake --build build
+```
+
+### Installation
+```bash
+cmake --build build --target install
+```
+
+This installs header files and library files to the system.
+
