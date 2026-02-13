@@ -141,7 +141,7 @@ inline xlns16 xlns16_div(xlns16 x, xlns16 y)
 
 #ifdef xlns16_alt
  #ifdef xlns16_table
- #include "tables/xlns16_sbdbtbl.h"
+ #include <xlns/tables/xlns16_sbdbtbl.h>
  #endif
 
 inline xlns16 xlns16_add(xlns16 x, xlns16 y)
@@ -229,14 +229,14 @@ xlns16 xlns16_add(xlns16 x, xlns16 y)
 
 #ifdef xlns16_table
 
-#include "tables/xlns16_revcvtbl.h"
+#include <xlns/tables/xlns16_revcvtbl.h>
 
 inline xlns16 fp2xlns16(float x)
 {
 	return xlns16revcvtbl[(*(unsigned *)&x)>>15];
 }
 
-#include "tables/xlns16_cvtbl.h"
+#include <xlns/tables/xlns16_cvtbl.h>
 
 inline float xlns162fp(xlns16 x)
 {
@@ -562,12 +562,12 @@ xlns16_float xlns16_float::operator=(float rvalue) {
 // functions computed ideally by convert to/from FP
 
 
-inline xlns16_float sin(xlns16_float x)
+xlns16_float sin(xlns16_float x)
 { 
 	return float2xlns16_(sin(xlns16_2float(x))); 
 }
 
-inline xlns16_float cos(xlns16_float x)
+xlns16_float cos(xlns16_float x)
 { 
 	return float2xlns16_(cos(xlns16_2float(x))); 
 }
@@ -575,31 +575,31 @@ inline xlns16_float cos(xlns16_float x)
 // exp and log can be implemented more efficiently in LNS but 
 // this is just cookie cutter ideal implementation at present
 
-inline xlns16_float exp(xlns16_float x)
+xlns16_float exp(xlns16_float x)
 { 
 	return float2xlns16_(exp(xlns16_2float(x))); 
 }
 
-inline xlns16_float log(xlns16_float x)
+xlns16_float log(xlns16_float x)
 { 
 	return float2xlns16_(log(xlns16_2float(x))); 
 }
 
-inline xlns16_float atan(xlns16_float x)
+xlns16_float atan(xlns16_float x)
 { 
 	return float2xlns16_(atan(xlns16_2float(x))); 
 }
 
 // the following have efficient macro implementations
 
-inline xlns16_float sqrt(xlns16_float x)
+xlns16_float sqrt(xlns16_float x)
 { 
 	xlns16_float result;
 	result.x = xlns16_sqrt(x.x); 
 	return result; 
 }
 
-inline xlns16_float abs(xlns16_float x)
+xlns16_float abs(xlns16_float x)
 { 
 	xlns16_float result;
 	result.x = xlns16_abs(x.x); 

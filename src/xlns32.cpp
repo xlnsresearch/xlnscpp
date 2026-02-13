@@ -122,7 +122,7 @@ inline xlns32 xlns32_div(xlns32 x, xlns32 y)
 #define xlns32_db1size       512
 #define xlns32_db2size       1024
 
-#include "tables/xlns32_tbl.h"
+#include <xlns/tables/xlns32_tbl.h>
 
 xlns32 xlns32_z, xlns32_zh;
 
@@ -596,12 +596,12 @@ xlns32_float xlns32_float::operator=(float rvalue) {
 // functions computed ideally by convert to/from FP
 
 
-inline xlns32_float sin(xlns32_float x)
+xlns32_float sin(xlns32_float x)
 { 
 	return float2xlns32_(sin(xlns32_2float(x))); 
 }
 
-inline xlns32_float cos(xlns32_float x)
+xlns32_float cos(xlns32_float x)
 { 
 	return float2xlns32_(cos(xlns32_2float(x))); 
 }
@@ -609,31 +609,31 @@ inline xlns32_float cos(xlns32_float x)
 // exp and log can be implemented more efficiently in LNS but 
 // this is just cookie cutter ideal implementation at present
 
-inline xlns32_float exp(xlns32_float x)
+xlns32_float exp(xlns32_float x)
 { 
 	return float2xlns32_(exp(xlns32_2float(x))); 
 }
 
-inline xlns32_float log(xlns32_float x)
+xlns32_float log(xlns32_float x)
 { 
 	return float2xlns32_(log(xlns32_2float(x))); 
 }
 
-inline xlns32_float atan(xlns32_float x)
+xlns32_float atan(xlns32_float x)
 { 
 	return float2xlns32_(atan(xlns32_2float(x))); 
 }
 
 // the following have efficient macro implementations
 
-inline xlns32_float sqrt(xlns32_float x)
+xlns32_float sqrt(xlns32_float x)
 { 
 	xlns32_float result;
 	result.x = xlns32_sqrt(x.x); 
 	return result; 
 }
 
-inline xlns32_float abs(xlns32_float x)
+xlns32_float abs(xlns32_float x)
 { 
 	xlns32_float result;
 	result.x = xlns32_abs(x.x); 

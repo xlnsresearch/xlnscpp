@@ -165,6 +165,10 @@ class xlns16_float {
 // Cache and access functions — declarations
 // ============================================================================
 
+// Cache-related variables (defined in xlns16.cpp)
+extern long xlns16_misses;
+extern long xlns16_hits;
+
 xlns16 xlns16_internal(xlns16_float y);
 float xlns16_2float(xlns16_float y);
 xlns16_float float2xlns16_(float y);

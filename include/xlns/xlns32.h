@@ -179,6 +179,10 @@ class xlns32_float {
 // Cache and access functions — declarations
 // ============================================================================
 
+// Cache-related variables (defined in xlns32.cpp)
+extern long xlns32_misses;
+extern long xlns32_hits;
+
 xlns32 xlns32_internal(xlns32_float y);
 float xlns32_2float(xlns32_float y);
 xlns32_float float2xlns32_(float y);

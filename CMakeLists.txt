@@ -19,14 +19,17 @@ option(XLNS_BUILD_TESTS   "Build test programs"          ON)
 option(XLNS_BUILD_TOOLS   "Build CLI tools (sb16, db16)" ON)
 option(XLNS_BUILD_BENCHMARKS "Build benchmarks"          ON)
 
-# ── Header-only library target ───────────────────────────────────────────────
+# ── Library target (compiled from src/*.cpp) ─────────────────────────────────
 
-add_library(xlns INTERFACE)
-target_include_directories(xlns INTERFACE
+add_library(xlns STATIC
+    src/xlns16.cpp
+    src/xlns32.cpp
+)
+target_include_directories(xlns PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>
 )
-target_link_libraries(xlns INTERFACE m)  # libm for math.h
+target_link_libraries(xlns PUBLIC m)  # libm for math.h
 
 # Alias for use via add_subdirectory / FetchContent
 add_library(xlns::xlns ALIAS xlns)
