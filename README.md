@@ -1,6 +1,6 @@
 # XLNSCPP
 
-**A C++ header-only library for Logarithmic Number System eXperimentation.**
+**A C++ library for Logarithmic Number System eXperimentation.**
 
 XLNSCPP provides 16-bit and 32-bit Logarithmic Number System (LNS) arithmetic — based on the same Gaussian-log foundation (sb/db) as the [Python xlns](https://github.com/xlnsresearch/xlns) package — but with a different, hardware-friendly internal storage format.
 
@@ -8,13 +8,13 @@ XLNSCPP provides 16-bit and 32-bit Logarithmic Number System (LNS) arithmetic �
 
 ## Features
 
-- **Header-only** — just `#include` and go, no separate compilation step
+- **CMake-native library target** (`xlns::xlns`) with install + `find_package()` support
 - **16-bit LNS** (`xlns16`) — roughly similar to `bfloat16` (1 sign + 8 int-log₂ + 7 frac-log₂)
 - **32-bit LNS** (`xlns32`) — roughly similar to IEEE 754 `float` (1 sign + 8 int-log₂ + 23 frac-log₂)
 - **Two APIs**: low-level C functions (`xlns16_add`, `xlns32_mul`, …) and C++ operator-overloaded classes (`xlns16_float`, `xlns32_float`)
 - **Multiple sb/db strategies**: ideal (math.h), LPVIP approximation, cotransformation/interpolation, full table lookup
 - **Compile-time configuration** via `#define` macros
-- **CMake build system** with installable targets and `find_package()` support
+- **Test, benchmark, and CLI validation tools** included
 
 ---
 
@@ -28,25 +28,32 @@ xlnscpp/
 ├── LICENSE
 ├── README.md
 │
-├── include/xlns/               Header-only library
+├── include/xlns/               Public headers
 │   ├── xlns.h                  Convenience header (includes both)
-│   ├── xlns16.cpp               16-bit LNS implementation
-│   ├── xlns32.cpp               32-bit LNS implementation
+│   ├── xlns16.h                16-bit API declarations
+│   ├── xlns32.h                32-bit API declarations
 │   └── tables/                 Precomputed lookup tables
-│       ├── xlns16_cvtbl.h        LNS16 → float conversion table
-│       ├── xlns16_revcvtbl.h     float → LNS16 conversion table
-│       ├── xlns16_sbdbtbl.h      16-bit sb/db direct lookup
-│       └── xlns32_tbl.h          32-bit sb interpolation tables
+│       ├── xlns16_cvtbl.h       LNS16 → float conversion table
+│       ├── xlns16_revcvtbl.h    float → LNS16 conversion table
+│       ├── xlns16_sbdbtbl.h     16-bit sb/db direct lookup
+│       └── xlns32_tbl.h         32-bit sb interpolation tables
+│
+├── src/                        Library implementations
+│   ├── xlns16.cpp
+│   └── xlns32.cpp
 │
 ├── test/                       Test programs & benchmarks
 │   ├── CMakeLists.txt
-│   ├── xlns16_test.cpp           16-bit arithmetic test suite
-│   ├── xlns32_test.cpp           32-bit arithmetic test suite
-│   ├── xlns16_funtest.cpp        Interactive 16-bit math functions
-│   ├── xlns32_funtest.cpp        Interactive 32-bit math functions
-│   ├── xlns_both_test.cpp        Cross-library coexistence test
-│   ├── xlns16_testcase.h         Compile-time test config matrix
-│   └── time16_benchmark.cpp      Performance benchmark
+│   ├── unit/
+│   │   ├── xlns16_test.cpp      16-bit arithmetic test suite
+│   │   ├── xlns32_test.cpp      32-bit arithmetic test suite
+│   │   ├── xlns_both_test.cpp   Cross-library coexistence test
+│   │   └── xlns16_testcase.h    Compile-time test config matrix
+│   ├── functional/
+│   │   ├── xlns16_funtest.cpp   Interactive 16-bit math functions
+│   │   └── xlns32_funtest.cpp   Interactive 32-bit math functions
+│   └── benchmark/
+│       └── time16_benchmark.cpp Performance benchmark
 │
 ├── tools/                      CLI tools for Gaussian log validation
 │   ├── CMakeLists.txt
@@ -61,8 +68,8 @@ xlnscpp/
 │   ├── sblptest.py               Compare LPVIP sb (C++ vs Python)
 │   └── dblptest.py               Compare LPVIP db (C++ vs Python)
 │
-└──cmake/modules/              CMake packaging support
-   └── xlnsConfig.cmake.in
+└── cmake/modules/              CMake packaging support
+    └── xlnsConfig.cmake.in
 
 ```
 
@@ -74,8 +81,8 @@ xlnscpp/
 
 ```cpp
 // my_program.cpp
-#define xlns32_ideal                     // optional: use math.h for sb/db
-#include <xlns/xlns32.cpp>                 // 32-bit LNS
+#include <iostream>
+#include <xlns/xlns32.h>
 
 int main() {
     xlns32_float a = 3.14f;
@@ -83,6 +90,12 @@ int main() {
     std::cout << "a + b = " << (a + b) << std::endl;
     return 0;
 }
+```
+
+```cmake
+# CMakeLists.txt
+add_executable(my_program my_program.cpp)
+target_link_libraries(my_program PRIVATE xlns::xlns)
 ```
 
 ### Building with CMake
@@ -131,9 +144,11 @@ python dbtest.py
 
 ## Compile-Time Configuration
 
-Define these macros **before** including the library header:
+XLNS behavior is selected at compile time via macros in `xlns16.h` / `xlns32.h`.
 
-### 16-bit (`xlns16.cpp`)
+Important: when using the CMake library target (`xlns::xlns`), those macros must be applied to the library build itself (for example via `target_compile_definitions(xlns PUBLIC ...)` in your superproject), not only in consumer `.cpp` files.
+
+### 16-bit (`xlns16.h` / `xlns16.cpp`)
 
 | Macro | Effect |
 |-------|--------|
@@ -142,7 +157,7 @@ Define these macros **before** including the library header:
 | `xlns16_altopt` | Less accurate but fewer-op LPVIP (requires `xlns16_alt`) |
 | `xlns16_table` | Table-based conversion and sb/db (fastest, ~1 MB) |
 
-### 32-bit (`xlns32.cpp`)
+### 32-bit (`xlns32.h` / `xlns32.cpp`)
 
 | Macro | Effect |
 |-------|--------|
@@ -209,7 +224,7 @@ Unlike the Python xlns, internal representation is **not** two's complement — 
 - **32-bit**: 1 sign + 8 int + 23 frac (similar to float32)
 - Exact representation of 0.0; no subnormals or NaNs
 
-See [docs/architecture.md](docs/architecture.md) for full details.
+For implementation details, see comments in [src/xlns16.cpp](src/xlns16.cpp) and [src/xlns32.cpp](src/xlns32.cpp).
 
 ---
 
