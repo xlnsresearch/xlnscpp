@@ -12,7 +12,6 @@ endfunction()
 
 # Default configuration (alt + altopt)
 xlns_add_test(xlns16_test unit/xlns16_test.cpp)
-target_compile_definitions(xlns16_test PRIVATE xlns16_alt xlns16_altopt)
 
 # ── 32-bit unit tests ────────────────────────────────────────────────────────
 
@@ -21,7 +20,6 @@ xlns_add_test(xlns32_test unit/xlns32_test.cpp)
 # ── Cross-library coexistence test ───────────────────────────────────────────
 
 xlns_add_test(xlns_both_test unit/xlns_both_test.cpp)
-target_compile_definitions(xlns_both_test PRIVATE xlns32_ideal xlns16_ideal)
 
 # ── Automated regression: build each xlns16 configuration ────────────────────
 
@@ -38,7 +36,6 @@ endforeach()
 
 # Interactive function test (ideal mode)
 xlns_add_test(xlns16_funtest functional/xlns16_funtest.cpp)
-target_compile_definitions(xlns16_funtest PRIVATE xlns16_ideal)
 
 # Interactive function test
 xlns_add_test(xlns32_funtest functional/xlns32_funtest.cpp)
@@ -47,5 +44,4 @@ xlns_add_test(xlns32_funtest functional/xlns32_funtest.cpp)
 
 if(XLNS_BUILD_BENCHMARKS)
     xlns_add_test(time16_benchmark benchmark/time16_benchmark.cpp)
-    target_compile_definitions(time16_benchmark PRIVATE xlns16_alt xlns16_table)
 endif()
