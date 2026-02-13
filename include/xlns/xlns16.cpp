@@ -141,7 +141,7 @@ inline xlns16 xlns16_div(xlns16 x, xlns16 y)
 
 #ifdef xlns16_alt
  #ifdef xlns16_table
- #include "xlns16sbdbtbl.h"
+ #include "tables/xlns16_sbdbtbl.h"
  #endif
 
 inline xlns16 xlns16_add(xlns16 x, xlns16 y)
@@ -229,14 +229,14 @@ xlns16 xlns16_add(xlns16 x, xlns16 y)
 
 #ifdef xlns16_table
 
-#include "xlns16revcvtbl.h"
+#include "tables/xlns16_revcvtbl.h"
 
 inline xlns16 fp2xlns16(float x)
 {
 	return xlns16revcvtbl[(*(unsigned *)&x)>>15];
 }
 
-#include "xlns16cvtbl.h"
+#include "tables/xlns16_cvtbl.h"
 
 inline float xlns162fp(xlns16 x)
 {

@@ -122,7 +122,7 @@ inline xlns32 xlns32_div(xlns32 x, xlns32 y)
 #define xlns32_db1size       512
 #define xlns32_db2size       1024
 
-#include "xlns32tbl.h"
+#include "tables/xlns32_tbl.h"
 
 xlns32 xlns32_z, xlns32_zh;
 
@@ -639,5 +639,3 @@ inline xlns32_float abs(xlns32_float x)
 	result.x = xlns32_abs(x.x); 
 	return result; 
 }
-
-

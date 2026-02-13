@@ -2,14 +2,14 @@
 #include <stdlib.h>
 #include <iostream>
 #ifdef xlns16case
- #include "xlns16testcase.h"
+ #include "xlns16_testcase.h"
 #else
  //#define xlns16_ideal
  #define xlns16_alt
  //#define xlns16_altopt
  #define xlns16_table
 #endif
-#include "xlns16.cpp"
+#include <xlns/xlns16.cpp>
   
 #include "math.h"
 #include <time.h>

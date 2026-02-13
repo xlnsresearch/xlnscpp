@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <iostream>
 #include <cstdlib>
-#define xlns16_ideal
-#include "xlns16.cpp"
+//#define xlns16_ideal
+#include <xlns/xlns16.cpp>
 
 //called by sblptest.py
 int main(int argc, char ** argv)
@@ -13,7 +13,7 @@ int main(int argc, char ** argv)
 	one =fp2xlns16(-1.0);
 	if (argc < 2)
 	{
-		std::cout << "db16 <int>; computes Gaussian Log for 16-bit LNS\n";
+		std::cout << "dbmit16 <int>; computes Gaussian Log for 16-bit LNS\n";
 		return 1;
 	}
 
