@@ -7,7 +7,7 @@
 #ifndef XLNS_XLNS_H
 #define XLNS_XLNS_H
 
-#include "xlns16.cpp"
-#include "xlns32.cpp"
+#include "xlns16.h"
+#include "xlns32.h"
 
 #endif // XLNS_XLNS_H

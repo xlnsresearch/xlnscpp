@@ -1,6 +1,6 @@
 #include <iostream>
 #define xlns16_ideal
-#include <xlns/xlns16.cpp>
+#include <xlns/xlns16.h>
 
 int main()
 {

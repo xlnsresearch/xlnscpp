@@ -3,7 +3,7 @@
 #include <iostream>
 #include <cstdlib>
 #define xlns16_ideal
-#include <xlns/xlns16.cpp>
+#include <xlns/xlns16.h>
 
 //called by sblptest.py
 int main(int argc, char ** argv)

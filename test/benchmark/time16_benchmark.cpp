@@ -9,7 +9,7 @@
  //#define xlns16_altopt
  #define xlns16_table
 #endif
-#include <xlns/xlns16.cpp>
+#include <xlns/xlns16.h>
   
 #include "math.h"
 #include <time.h>

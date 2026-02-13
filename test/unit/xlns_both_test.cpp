@@ -3,9 +3,9 @@
 #include <stdlib.h>
 #include <iostream>
 #define xlns32_ideal
-#include <xlns/xlns32.cpp>
+#include <xlns/xlns32.h>
 #define xlns16_ideal
-#include <xlns/xlns16.cpp>
+#include <xlns/xlns16.h>
 
 void test1xlns32()
 {

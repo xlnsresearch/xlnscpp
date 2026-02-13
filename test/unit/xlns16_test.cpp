@@ -12,7 +12,7 @@
 #endif
   
 
-#include <xlns/xlns16.cpp>
+#include <xlns/xlns16.h>
 
 
 
