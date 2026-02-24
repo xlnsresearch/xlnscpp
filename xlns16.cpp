@@ -561,6 +561,14 @@ inline void xlns16_softmax_exp(const xlns16 *a, xlns16 *c, size_t n) {
 
 // exp and log in LNS
 
+#ifdef xlns16_table
+#include "xlns16exptbl.h"
+#include "xlns16logtbl.h"
+// exp(x) - computes e^x
+inline xlns16 xlns16_exp(xlns16 x) { return xlns16exptbl[x]; }
+// log(x) - computes natural log
+inline xlns16 xlns16_log(xlns16 x) { return xlns16logtbl[x]; }
+#else
 // exp(x) - computes e^x
 inline xlns16 xlns16_exp(xlns16 x) {
     float fx = xlns162fp(x);
@@ -573,6 +581,7 @@ inline xlns16 xlns16_log(xlns16 x) {
     if (fx <= 0.0f) return xlns16_zero;
     return fp2xlns16(logf(fx));
 }
+#endif
 
 // exp2(x) - computes 2^x
 inline xlns16 xlns16_exp2(xlns16 x) {
