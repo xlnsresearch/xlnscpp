@@ -53,12 +53,29 @@
   #define xlns32_canonshift    31
 #endif
 
+// Useful constant values (pre-computed LNS representations)
+// xlns32_one:     log2(1.0) = 0, so internal = 0 ^ logsignmask = 0x40000000
+// xlns32_two:     log2(2.0) = 1, scaled = 0x00800000, internal = 0x00800000 ^ 0x40000000 = 0x40800000
+// xlns32_half:    log2(0.5) = -1, scaled = -0x00800000 = 0xFF800000 (as signed), 
+//                 but we use abs and XOR: internal = 0x3F800000
+// xlns32_neg_one: same as xlns32_one but with sign bit set
+#define xlns32_one          0x40000000
+#define xlns32_neg_one      0xC0000000
+#define xlns32_two          0x40800000
+#define xlns32_neg_two      0xC0800000
+#define xlns32_half         0x3F800000
+#define xlns32_neg_half     0xBF800000
+
+// Basic unary operations (macros for efficiency)
 #define xlns32_sign(x)  ((x) & xlns32_signmask)
 #define xlns32_neg(x)   ((x) ^ xlns32_signmask)
 #define xlns32_abs(x)   ((x) & xlns32_logmask)
 #define xlns32_recip(x) (xlns32_sign(x)|xlns32_abs((~x)+1))
 #define xlns32_sqrt(x)   (xlns32_abs(((xlns32_signed)((x)<<1))/4)^xlns32_sqrtmask)
 #define xlns32_canon(x) ((x)^(-((x)>>xlns32_canonshift)|xlns32_signmask))
+
+// Square: x^2 (efficient in LNS: double the log)
+#define xlns32_square(x) xlns32_mul((x), (x))
 
 inline xlns32 xlns32_overflow(xlns32 xlns32_x, xlns32 xlns32_y, xlns32 xlns32_temp)
 {       //printf("%ld %ld %ld\n",xlns32_temp,xlns32_x,xlns32_y);
@@ -303,8 +320,317 @@ float xlns322fp(xlns32 x)
 	}
 }
 
+// Comparison and utility functions
 
+// Check if value is zero
+inline int xlns32_is_zero(xlns32 x) {
+    return (xlns32_abs(x) == xlns32_zero);
+}
 
+// Check if value is negative
+inline int xlns32_is_negative(xlns32 x) {
+    return (xlns32_sign(x) != 0) && !xlns32_is_zero(x);
+}
+
+// Check if value is positive
+inline int xlns32_is_positive(xlns32 x) {
+    return (xlns32_sign(x) == 0) && !xlns32_is_zero(x);
+}
+
+// Greater than comparison (returns 1 if a > b)
+inline int xlns32_gt(xlns32 a, xlns32 b) {
+    return xlns32_canon(a) > xlns32_canon(b);
+}
+
+// Less than comparison (returns 1 if a < b)
+inline int xlns32_lt(xlns32 a, xlns32 b) {
+    return xlns32_canon(a) < xlns32_canon(b);
+}
+
+// Equal comparison
+inline int xlns32_eq(xlns32 a, xlns32 b) {
+    return a == b;
+}
+
+// Greater than or equal
+inline int xlns32_ge(xlns32 a, xlns32 b) {
+    return xlns32_canon(a) >= xlns32_canon(b);
+}
+
+// Less than or equal
+inline int xlns32_le(xlns32 a, xlns32 b) {
+    return xlns32_canon(a) <= xlns32_canon(b);
+}
+
+// Maximum of two values
+inline xlns32 xlns32_max(xlns32 a, xlns32 b) {
+    return xlns32_gt(a, b) ? a : b;
+}
+
+// Minimum of two values
+inline xlns32 xlns32_min(xlns32 a, xlns32 b) {
+    return xlns32_lt(a, b) ? a : b;
+}
+
+// Copy sign from y to x (magnitude of x, sign of y)
+inline xlns32 xlns32_copysign(xlns32 x, xlns32 y) {
+    return xlns32_abs(x) | xlns32_sign(y);
+}
+
+// Fused multiply-add: a * b + c
+inline xlns32 xlns32_fma(xlns32 a, xlns32 b, xlns32 c) {
+    return xlns32_add(xlns32_mul(a, b), c);
+}
+
+// Batch conversion functions (for ggml tensor operations)
+
+// Batch convert float array to xlns32 array
+inline void xlns32_batch_from_float(const float *src, xlns32 *dst, size_t n) {
+    for (size_t i = 0; i < n; i++) {
+        dst[i] = fp2xlns32(src[i]);
+    }
+}
+
+// Batch convert xlns32 array to float array
+inline void xlns32_batch_to_float(const xlns32 *src, float *dst, size_t n) {
+    for (size_t i = 0; i < n; i++) {
+        dst[i] = xlns322fp(src[i]);
+    }
+}
+
+// Batch element-wise operations
+
+// Batch multiplication: c[i] = a[i] * b[i]
+inline void xlns32_batch_mul(const xlns32 *a, const xlns32 *b, xlns32 *c, size_t n) {
+    for (size_t i = 0; i < n; i++) {
+        c[i] = xlns32_mul(a[i], b[i]);
+    }
+}
+
+// Batch addition: c[i] = a[i] + b[i]
+inline void xlns32_batch_add(const xlns32 *a, const xlns32 *b, xlns32 *c, size_t n) {
+    for (size_t i = 0; i < n; i++) {
+        c[i] = xlns32_add(a[i], b[i]);
+    }
+}
+
+// Batch subtraction: c[i] = a[i] - b[i]
+inline void xlns32_batch_sub(const xlns32 *a, const xlns32 *b, xlns32 *c, size_t n) {
+    for (size_t i = 0; i < n; i++) {
+        c[i] = xlns32_sub(a[i], b[i]);
+    }
+}
+
+// Batch division: c[i] = a[i] / b[i]
+inline void xlns32_batch_div(const xlns32 *a, const xlns32 *b, xlns32 *c, size_t n) {
+    for (size_t i = 0; i < n; i++) {
+        c[i] = xlns32_div(a[i], b[i]);
+    }
+}
+
+// Batch scale: c[i] = a[i] * scalar
+inline void xlns32_batch_scale(const xlns32 *a, xlns32 scalar, xlns32 *c, size_t n) {
+    for (size_t i = 0; i < n; i++) {
+        c[i] = xlns32_mul(a[i], scalar);
+    }
+}
+
+// Batch negation: c[i] = -a[i]
+inline void xlns32_batch_neg(const xlns32 *a, xlns32 *c, size_t n) {
+    for (size_t i = 0; i < n; i++) {
+        c[i] = xlns32_neg(a[i]);
+    }
+}
+
+// Batch absolute value: c[i] = |a[i]|
+inline void xlns32_batch_abs(const xlns32 *a, xlns32 *c, size_t n) {
+    for (size_t i = 0; i < n; i++) {
+        c[i] = xlns32_abs(a[i]);
+    }
+}
+
+// Vector operations (critical for ggml MUL_MAT)
+
+// Sum of array elements: result = Σ a[i]
+inline xlns32 xlns32_sum(const xlns32 *a, size_t n) {
+    if (n == 0) return xlns32_zero;
+    xlns32 sum = a[0];
+    for (size_t i = 1; i < n; i++) {
+        sum = xlns32_add(sum, a[i]);
+    }
+    return sum;
+}
+
+// Vector dot product: result = Σ(a[i] * b[i])
+inline xlns32 xlns32_vec_dot(const xlns32 *a, const xlns32 *b, size_t n) {
+    if (n == 0) return xlns32_zero;
+    xlns32 sum = xlns32_mul(a[0], b[0]);
+    for (size_t i = 1; i < n; i++) {
+        sum = xlns32_add(sum, xlns32_mul(a[i], b[i]));
+    }
+    return sum;
+}
+
+// Vector dot product with float inputs (converts to LNS internally)
+inline float xlns32_vec_dot_f32(const float *a, const float *b, size_t n) {
+    if (n == 0) return 0.0f;
+    xlns32 sum = xlns32_mul(fp2xlns32(a[0]), fp2xlns32(b[0]));
+    for (size_t i = 1; i < n; i++) {
+        xlns32 prod = xlns32_mul(fp2xlns32(a[i]), fp2xlns32(b[i]));
+        sum = xlns32_add(sum, prod);
+    }
+    return xlns322fp(sum);
+}
+
+// Maximum element in array
+inline xlns32 xlns32_max_array(const xlns32 *a, size_t n) {
+    if (n == 0) return xlns32_zero;
+    xlns32 maxval = a[0];
+    for (size_t i = 1; i < n; i++) {
+        if (xlns32_gt(a[i], maxval)) {
+            maxval = a[i];
+        }
+    }
+    return maxval;
+}
+
+// Minimum element in array
+inline xlns32 xlns32_min_array(const xlns32 *a, size_t n) {
+    if (n == 0) return xlns32_zero;
+    xlns32 minval = a[0];
+    for (size_t i = 1; i < n; i++) {
+        if (xlns32_lt(a[i], minval)) {
+            minval = a[i];
+        }
+    }
+    return minval;
+}
+
+// Activation functions (for neural network operations)
+
+// ReLU: max(0, x)
+inline xlns32 xlns32_relu(xlns32 x) {
+    return xlns32_is_negative(x) ? xlns32_zero : x;
+}
+
+// Batch ReLU
+inline void xlns32_batch_relu(const xlns32 *a, xlns32 *c, size_t n) {
+    for (size_t i = 0; i < n; i++) {
+        c[i] = xlns32_relu(a[i]);
+    }
+}
+
+// Sigmoid: 1 / (1 + exp(-x))
+// Note: Uses float conversion for exp() then converts back
+inline xlns32 xlns32_sigmoid(xlns32 x) {
+    float fx = xlns322fp(x);
+    float result = 1.0f / (1.0f + expf(-fx));
+    return fp2xlns32(result);
+}
+
+// Batch sigmoid
+inline void xlns32_batch_sigmoid(const xlns32 *a, xlns32 *c, size_t n) {
+    for (size_t i = 0; i < n; i++) {
+        c[i] = xlns32_sigmoid(a[i]);
+    }
+}
+
+// Tanh: (exp(x) - exp(-x)) / (exp(x) + exp(-x))
+inline xlns32 xlns32_tanh(xlns32 x) {
+    float fx = xlns322fp(x);
+    float result = tanhf(fx);
+    return fp2xlns32(result);
+}
+
+// Batch tanh
+inline void xlns32_batch_tanh(const xlns32 *a, xlns32 *c, size_t n) {
+    for (size_t i = 0; i < n; i++) {
+        c[i] = xlns32_tanh(a[i]);
+    }
+}
+
+// SiLU (Swish): x * sigmoid(x) = x / (1 + exp(-x))
+inline xlns32 xlns32_silu(xlns32 x) {
+    float fx = xlns322fp(x);
+    float result = fx / (1.0f + expf(-fx));
+    return fp2xlns32(result);
+}
+
+// Batch SiLU
+inline void xlns32_batch_silu(const xlns32 *a, xlns32 *c, size_t n) {
+    for (size_t i = 0; i < n; i++) {
+        c[i] = xlns32_silu(a[i]);
+    }
+}
+
+// GELU approximation: 0.5 * x * (1 + tanh(sqrt(2/pi) * (x + 0.044715 * x^3)))
+inline xlns32 xlns32_gelu(xlns32 x) {
+    float fx = xlns322fp(x);
+    const float sqrt_2_over_pi = 0.7978845608f;  // sqrt(2/pi)
+    float inner = sqrt_2_over_pi * (fx + 0.044715f * fx * fx * fx);
+    float result = 0.5f * fx * (1.0f + tanhf(inner));
+    return fp2xlns32(result);
+}
+
+// Batch GELU
+inline void xlns32_batch_gelu(const xlns32 *a, xlns32 *c, size_t n) {
+    for (size_t i = 0; i < n; i++) {
+        c[i] = xlns32_gelu(a[i]);
+    }
+}
+
+// Softmax helper: subtract max for numerical stability, then exp
+// Note: This is a building block; full softmax requires normalization
+inline void xlns32_softmax_exp(const xlns32 *a, xlns32 *c, size_t n) {
+    // Find max for numerical stability
+    xlns32 maxval = xlns32_max_array(a, n);
+    for (size_t i = 0; i < n; i++) {
+        // c[i] = exp(a[i] - max)
+        float fx = xlns322fp(a[i]) - xlns322fp(maxval);
+        c[i] = fp2xlns32(expf(fx));
+    }
+}
+
+// exp and log in LNS (optimized versions)
+
+// Note: These can potentially be optimized further since LNS 
+// stores log2(x), so exp2/log2 can be more efficient
+
+// exp(x) - computes e^x
+inline xlns32 xlns32_exp(xlns32 x) {
+    float fx = xlns322fp(x);
+    return fp2xlns32(expf(fx));
+}
+
+// log(x) - computes natural log
+inline xlns32 xlns32_log(xlns32 x) {
+    float fx = xlns322fp(x);
+    if (fx <= 0.0f) return xlns32_zero;  // Handle invalid input
+    return fp2xlns32(logf(fx));
+}
+
+// exp2(x) - computes 2^x (efficient in LNS: just scale the value)
+// In LNS, if y = log2(val), then 2^x * val has log2 = y + x
+// So this shifts the log representation
+inline xlns32 xlns32_exp2(xlns32 x) {
+    float fx = xlns322fp(x);
+    return fp2xlns32(exp2f(fx));
+}
+
+// log2(x) - computes log base 2 (very efficient in LNS)
+inline xlns32 xlns32_log2(xlns32 x) {
+    float fx = xlns322fp(x);
+    if (fx <= 0.0f) return xlns32_zero;
+    return fp2xlns32(log2f(fx));
+}
+
+// pow(base, exp) - computes base^exp
+inline xlns32 xlns32_pow(xlns32 base, xlns32 exponent) {
+    float fbase = xlns322fp(base);
+    float fexp = xlns322fp(exponent);
+    if (fbase <= 0.0f) return xlns32_zero;
+    return fp2xlns32(powf(fbase, fexp));
+}
 
 
 /*END OF PORTABLE CODE THAT DEPENDS ON <math.h>*/
