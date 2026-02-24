@@ -633,6 +633,18 @@ inline xlns32 xlns32_pow(xlns32 base, xlns32 exponent) {
 }
 
 
+
+// Full softmax: exp(a[i]-max) / sum(exp(a[j]-max)), using LNS primitives
+inline void xlns32_softmax(const xlns32 *a, xlns32 *c, size_t n) {
+    if (n == 0) return;
+    xlns32 maxval = xlns32_max_array(a, n);
+    for (size_t i = 0; i < n; i++)
+        c[i] = xlns32_exp(xlns32_sub(a[i], maxval));
+    xlns32 total = xlns32_sum(c, n);
+    for (size_t i = 0; i < n; i++)
+        c[i] = xlns32_div(c[i], total);
+}
+
 /*END OF PORTABLE CODE THAT DEPENDS ON <math.h>*/
 
 

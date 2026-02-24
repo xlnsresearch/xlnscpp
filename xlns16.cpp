@@ -595,6 +595,18 @@ inline xlns16 xlns16_pow(xlns16 base, xlns16 exponent) {
     return fp2xlns16(powf(fbase, fexp));
 }
 
+
+// Full softmax: exp(a[i]-max) / sum(exp(a[j]-max)), using LNS primitives
+inline void xlns16_softmax(const xlns16 *a, xlns16 *c, size_t n) {
+    if (n == 0) return;
+    xlns16 maxval = xlns16_max_array(a, n);
+    for (size_t i = 0; i < n; i++)
+        c[i] = xlns16_exp(xlns16_sub(a[i], maxval));
+    xlns16 total = xlns16_sum(c, n);
+    for (size_t i = 0; i < n; i++)
+        c[i] = xlns16_div(c[i], total);
+}
+
 /*END OF PORTABLE CODE THAT DEPENDS ON <math.h>*/
 
 
