@@ -26,7 +26,9 @@ BOTH_BINS   := $(BOTH_SRCS:.cpp=)
 
 ALL_BINS    := $(TEST16_BINS) $(TEST32_BINS) $(BOTH_BINS)
 
-.PHONY: all test16 test32 both clean help
+FORMAT_SRCS := $(wildcard *.cpp *.h)
+
+.PHONY: all test16 test32 both format format-check clean help
 
 all: test16 test32 both
 
@@ -51,6 +53,14 @@ $(TEST32_BINS): %: %.cpp xlns32.cpp xlns32tbl.h
 $(BOTH_BINS): %: %.cpp xlns16.cpp xlns32.cpp xlns16cvtbl.h xlns16revcvtbl.h xlns16sbdbtbl.h xlns32tbl.h
 	$(CXX) $(CXXFLAGS) -o $@ $<
 
+## Format all source files in-place using .clang-format
+format:
+	clang-format -i $(FORMAT_SRCS)
+
+## Check formatting without modifying files (exits non-zero if changes needed)
+format-check:
+	clang-format --dry-run --Werror $(FORMAT_SRCS)
+
 ## Remove all compiled binaries
 clean:
 	rm -f $(ALL_BINS)
@@ -62,4 +72,6 @@ help:
 	@echo "  make test32   — build all 32-bit test programs"
 	@echo "  make both     — build the combined xlnsbothtest program"
 	@echo "  make all      — build everything (default)"
-	@echo "  make clean    — remove all compiled binaries"
+	@echo "  make format       — format all sources in-place (clang-format)"
+	@echo "  make format-check — check formatting without modifying files"
+	@echo "  make clean         — remove all compiled binaries"
