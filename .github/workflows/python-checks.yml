@@ -1,0 +1,30 @@
+name: Python Checks
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Run validation scripts
+        run: |
+          python sbtest.py
+          python dbtest.py
+          python sblptest.py
+          python dblptest.py

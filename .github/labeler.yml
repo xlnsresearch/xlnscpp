@@ -1,0 +1,30 @@
+documentation:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "**/*.md"
+          - "project/**/*.md"
+
+tests:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "**/*test*.cpp"
+          - "**/*test*.py"
+
+xlns16:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "xlns16.cpp"
+          - "xlns16*.h"
+          - "xlns16*_test*.cpp"
+
+xlns32:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "xlns32.cpp"
+          - "xlns32*.h"
+          - "xlns32*_test*.cpp"
+
+ci:
+  - changed-files:
+      - any-glob-to-any-file:
+          - ".github/workflows/**"
