@@ -1,0 +1,61 @@
+name: ❓ Question
+description: Ask a question about using XLNSCPP
+title: "[Question]: "
+labels: ["question"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Have a question about using XLNSCPP? We're here to help!
+
+  - type: checkboxes
+    id: existing-docs
+    attributes:
+      label: Have you checked existing resources?
+      description: Please confirm you've checked these resources first.
+      options:
+        - label: I have read the README.md
+          required: true
+        - label: I have searched existing issues for similar questions
+          required: true
+
+  - type: textarea
+    id: question
+    attributes:
+      label: Your Question
+      description: What would you like to know?
+      placeholder: Ask your question here...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: topic
+    attributes:
+      label: Topic
+      description: What is your question about?
+      options:
+        - Usage/API
+        - Installation/Setup
+        - Performance
+        - Compile-time options
+        - Integration with other projects
+        - Mathematical concepts (LNS, Gaussian logs)
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional Context
+      description: Add any additional context that might help answer your question.
+      placeholder: Code samples, error messages, etc.
+
+  - type: textarea
+    id: code
+    attributes:
+      label: Code Sample (if applicable)
+      description: If your question relates to specific code, please share it.
+      render: cpp

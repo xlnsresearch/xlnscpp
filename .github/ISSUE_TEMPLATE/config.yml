@@ -1,0 +1,11 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 🤝 Contributing Guide
+    url: https://github.com/OWNER/xlnscpp/blob/main/CONTRIBUTING.md
+    about: Read contribution guidelines before opening issues or pull requests
+  - name: 🛡️ Code of Conduct
+    url: https://github.com/OWNER/xlnscpp/blob/main/CODE_OF_CONDUCT.md
+    about: Review our community standards and reporting process
+  - name: 💬 Discussions
+    url: https://github.com/OWNER/xlnscpp/discussions
+    about: Ask questions and share ideas in GitHub Discussions
