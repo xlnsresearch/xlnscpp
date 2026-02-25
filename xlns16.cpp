@@ -550,49 +550,95 @@ inline void xlns16_batch_gelu(const xlns16 *a, xlns16 *c, size_t n) {
     }
 }
 
-// Softmax helper: subtract max for numerical stability, then exp
+// Pre-computed constants for LNS-native exp/log operations
+// log2(e) = 1.4426950408889634 -> xlns16 representation
+// ln(2)   = 0.6931471805599453 -> xlns16 representation
+#define xlns16_log2e   0x404b  // fp2xlns16(1.4426950408889634f)
+#define xlns16_ln2     0x3fb1  // fp2xlns16(0.6931471805599453f)
+
+#ifdef xlns16_table
+inline xlns16 xlns16_exp2(xlns16 x) {
+    if (xlns16_abs(x) == xlns16_zero) return xlns16_one;  // 2^0 = 1
+    if (xlns16_sign(x)) return xlns16_zero;  // 2^(-val) for negative is handled below
+    float fx = xlns162fp(x);
+    if (fx > 127.0f) return xlns16_logmask;  // overflow to max
+    if (fx < -127.0f) return xlns16_zero;     // underflow to zero
+    xlns16_signed log_result = (xlns16_signed)(fx * xlns16_scale) + xlns16_logsignmask;
+    if (log_result < 0) return xlns16_zero;
+    if (log_result > xlns16_logmask) return xlns16_logmask;
+    return (xlns16)log_result;
+}
+
+inline xlns16 xlns16_log2(xlns16 x) {
+    if (xlns16_abs(x) == xlns16_zero) return xlns16_signmask | xlns16_logmask;  // -inf
+    if (xlns16_sign(x)) return xlns16_zero;  // log of negative is undefined, return 0
+    xlns16_signed log_val = (xlns16_signed)(xlns16_abs(x) - xlns16_logsignmask);
+    return fp2xlns16((float)log_val / xlns16_scale);
+}
+
+inline xlns16 xlns16_exp(xlns16 x) {
+    if (xlns16_abs(x) == xlns16_zero) return xlns16_one;  // e^0 = 1
+    xlns16 scaled = xlns16_mul(x, xlns16_log2e);
+    return xlns16_exp2(scaled);
+}
+
+inline xlns16 xlns16_log(xlns16 x) {
+    if (xlns16_abs(x) == xlns16_zero) return xlns16_signmask | xlns16_logmask;  // -inf
+    if (xlns16_sign(x)) return xlns16_zero;  // log of negative is undefined
+    xlns16 log2_val = xlns16_log2(x);
+    return xlns16_mul(log2_val, xlns16_ln2);
+}
+
+#else
+
+inline xlns16 xlns16_exp2(xlns16 x) {
+    if (xlns16_abs(x) == xlns16_zero) return xlns16_one;  // 2^0 = 1
+    float fx = xlns162fp(x);
+    if (fx > 127.0f) return xlns16_logmask;  // overflow to max
+    if (fx < -127.0f) return xlns16_zero;     // underflow to zero
+    xlns16_signed log_result = (xlns16_signed)(fx * xlns16_scale + 0.5f) + xlns16_logsignmask;
+    if (log_result < 0) return xlns16_zero;
+    if (log_result > (xlns16_signed)xlns16_logmask) return xlns16_logmask;
+    return (xlns16)log_result;
+}
+
+inline xlns16 xlns16_log2(xlns16 x) {
+    if (xlns16_abs(x) == xlns16_zero) return xlns16_signmask | xlns16_logmask;  // -inf
+    if (xlns16_sign(x)) return xlns16_zero;  // log of negative is undefined, return 0
+    xlns16_signed log_val = (xlns16_signed)(xlns16_abs(x)) - (xlns16_signed)xlns16_logsignmask;
+    return fp2xlns16((float)log_val / xlns16_scale);
+}
+
+inline xlns16 xlns16_exp(xlns16 x) {
+    if (xlns16_abs(x) == xlns16_zero) return xlns16_one;  // e^0 = 1
+    xlns16 scaled = xlns16_mul(x, xlns16_log2e);
+    return xlns16_exp2(scaled);
+}
+
+inline xlns16 xlns16_log(xlns16 x) {
+    if (xlns16_abs(x) == xlns16_zero) return xlns16_signmask | xlns16_logmask;  // -inf
+    if (xlns16_sign(x)) return xlns16_zero;  // log of negative is undefined
+    xlns16 log2_val = xlns16_log2(x);
+    return xlns16_mul(log2_val, xlns16_ln2);
+}
+
+#endif
+
+inline xlns16 xlns16_pow(xlns16 base, xlns16 exponent) {
+    if (xlns16_abs(base) == xlns16_zero) return xlns16_zero;  // 0^x = 0
+    if (xlns16_sign(base)) return xlns16_zero;  // negative base not supported
+    if (xlns16_abs(exponent) == xlns16_zero) return xlns16_one;  // x^0 = 1
+    xlns16 log2_base = xlns16_log2(base);
+    xlns16 product = xlns16_mul(exponent, log2_base);
+    return xlns16_exp2(product);
+}
+
 inline void xlns16_softmax_exp(const xlns16 *a, xlns16 *c, size_t n) {
     xlns16 maxval = xlns16_max_array(a, n);
     for (size_t i = 0; i < n; i++) {
-        float fx = xlns162fp(a[i]) - xlns162fp(maxval);
-        c[i] = fp2xlns16(expf(fx));
+        xlns16 diff = xlns16_sub(a[i], maxval);
+        c[i] = xlns16_exp(diff);
     }
-}
-
-// exp and log in LNS
-
-// exp(x) - computes e^x
-inline xlns16 xlns16_exp(xlns16 x) {
-    float fx = xlns162fp(x);
-    return fp2xlns16(expf(fx));
-}
-
-// log(x) - computes natural log
-inline xlns16 xlns16_log(xlns16 x) {
-    float fx = xlns162fp(x);
-    if (fx <= 0.0f) return xlns16_zero;
-    return fp2xlns16(logf(fx));
-}
-
-// exp2(x) - computes 2^x
-inline xlns16 xlns16_exp2(xlns16 x) {
-    float fx = xlns162fp(x);
-    return fp2xlns16(exp2f(fx));
-}
-
-// log2(x) - computes log base 2
-inline xlns16 xlns16_log2(xlns16 x) {
-    float fx = xlns162fp(x);
-    if (fx <= 0.0f) return xlns16_zero;
-    return fp2xlns16(log2f(fx));
-}
-
-// pow(base, exp) - computes base^exp
-inline xlns16 xlns16_pow(xlns16 base, xlns16 exponent) {
-    float fbase = xlns162fp(base);
-    float fexp = xlns162fp(exponent);
-    if (fbase <= 0.0f) return xlns16_zero;
-    return fp2xlns16(powf(fbase, fexp));
 }
 
 /*END OF PORTABLE CODE THAT DEPENDS ON <math.h>*/

@@ -579,57 +579,58 @@ inline void xlns32_batch_gelu(const xlns32 *a, xlns32 *c, size_t n) {
     }
 }
 
-// Softmax helper: subtract max for numerical stability, then exp
-// Note: This is a building block; full softmax requires normalization
+// Pre-computed constants for LNS-native exp/log operations
+#define xlns32_log2e   0x4049660a  // fp2xlns32(1.4426950408889634)
+#define xlns32_ln2     0x3fb17218  // fp2xlns32(0.6931471805599453)
+
+// exp2(x) - computes 2^x
+inline xlns32 xlns32_exp2(xlns32 x) {
+    if (xlns32_abs(x) == xlns32_zero) return xlns32_one;  // 2^0 = 1
+    double fx = (double)xlns322fp(x);  // use double for xlns32's larger range
+    if (fx > 127.0) return xlns32_logmask;  // overflow to max
+    if (fx < -127.0) return xlns32_zero;     // underflow to zero
+    xlns32_signed log_result = (xlns32_signed)(fx * xlns32_scale + 0.5) + xlns32_logsignmask;
+    if (log_result < 0) return xlns32_zero;
+    if (log_result > (xlns32_signed)xlns32_logmask) return xlns32_logmask;
+    return (xlns32)log_result;
+}
+
+inline xlns32 xlns32_log2(xlns32 x) {
+    if (xlns32_abs(x) == xlns32_zero) return xlns32_signmask | xlns32_logmask;  // -inf
+    if (xlns32_sign(x)) return xlns32_zero;  // log of negative is undefined, return 0
+    xlns32_signed log_val = (xlns32_signed)(xlns32_abs(x)) - (xlns32_signed)xlns32_logsignmask;
+    return fp2xlns32((float)log_val / xlns32_scale);
+}
+
+inline xlns32 xlns32_exp(xlns32 x) {
+    if (xlns32_abs(x) == xlns32_zero) return xlns32_one;  // e^0 = 1
+    xlns32 scaled = xlns32_mul(x, xlns32_log2e);
+    return xlns32_exp2(scaled);
+}
+
+inline xlns32 xlns32_log(xlns32 x) {
+    if (xlns32_abs(x) == xlns32_zero) return xlns32_signmask | xlns32_logmask;  // -inf
+    if (xlns32_sign(x)) return xlns32_zero;  // log of negative is undefined
+    xlns32 log2_val = xlns32_log2(x);
+    return xlns32_mul(log2_val, xlns32_ln2);
+}
+
+inline xlns32 xlns32_pow(xlns32 base, xlns32 exponent) {
+    if (xlns32_abs(base) == xlns32_zero) return xlns32_zero;  // 0^x = 0
+    if (xlns32_sign(base)) return xlns32_zero;  // negative base not supported
+    if (xlns32_abs(exponent) == xlns32_zero) return xlns32_one;  // x^0 = 1
+    xlns32 log2_base = xlns32_log2(base);
+    xlns32 product = xlns32_mul(exponent, log2_base);
+    return xlns32_exp2(product);
+}
+
 inline void xlns32_softmax_exp(const xlns32 *a, xlns32 *c, size_t n) {
     // Find max for numerical stability
     xlns32 maxval = xlns32_max_array(a, n);
     for (size_t i = 0; i < n; i++) {
-        // c[i] = exp(a[i] - max)
-        float fx = xlns322fp(a[i]) - xlns322fp(maxval);
-        c[i] = fp2xlns32(expf(fx));
+        xlns32 diff = xlns32_sub(a[i], maxval);
+        c[i] = xlns32_exp(diff);
     }
-}
-
-// exp and log in LNS (optimized versions)
-
-// Note: These can potentially be optimized further since LNS 
-// stores log2(x), so exp2/log2 can be more efficient
-
-// exp(x) - computes e^x
-inline xlns32 xlns32_exp(xlns32 x) {
-    float fx = xlns322fp(x);
-    return fp2xlns32(expf(fx));
-}
-
-// log(x) - computes natural log
-inline xlns32 xlns32_log(xlns32 x) {
-    float fx = xlns322fp(x);
-    if (fx <= 0.0f) return xlns32_zero;  // Handle invalid input
-    return fp2xlns32(logf(fx));
-}
-
-// exp2(x) - computes 2^x (efficient in LNS: just scale the value)
-// In LNS, if y = log2(val), then 2^x * val has log2 = y + x
-// So this shifts the log representation
-inline xlns32 xlns32_exp2(xlns32 x) {
-    float fx = xlns322fp(x);
-    return fp2xlns32(exp2f(fx));
-}
-
-// log2(x) - computes log base 2 (very efficient in LNS)
-inline xlns32 xlns32_log2(xlns32 x) {
-    float fx = xlns322fp(x);
-    if (fx <= 0.0f) return xlns32_zero;
-    return fp2xlns32(log2f(fx));
-}
-
-// pow(base, exp) - computes base^exp
-inline xlns32 xlns32_pow(xlns32 base, xlns32 exponent) {
-    float fbase = xlns322fp(base);
-    float fexp = xlns322fp(exponent);
-    if (fbase <= 0.0f) return xlns32_zero;
-    return fp2xlns32(powf(fbase, fexp));
 }
 
 
