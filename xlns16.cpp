@@ -616,6 +616,34 @@ inline void xlns16_softmax(const xlns16 *a, xlns16 *c, size_t n) {
         c[i] = xlns16_div(c[i], total);
 }
 
+
+// Quantized weight I/O: convert float weights to xlns16 and save/load as binary
+inline size_t xlns16_weight_save(const float *weights, size_t n, FILE *fp) {
+    for (size_t i = 0; i < n; i++) {
+        xlns16 q = fp2xlns16(weights[i]);
+        fwrite(&q, sizeof(xlns16), 1, fp);
+    }
+    return n * sizeof(xlns16);
+}
+
+inline size_t xlns16_weight_load(xlns16 *dst, size_t n, FILE *fp) {
+    return fread(dst, sizeof(xlns16), n, fp);
+}
+
+// Convert a float matrix (rows x cols) to xlns16 in-place
+inline void xlns16_quantize_matrix(const float *src, xlns16 *dst,
+                               size_t rows, size_t cols) {
+    for (size_t i = 0; i < rows * cols; i++)
+        dst[i] = fp2xlns16(src[i]);
+}
+
+// Dequantize xlns16 matrix back to float
+inline void xlns16_dequantize_matrix(const xlns16 *src, float *dst,
+                                 size_t rows, size_t cols) {
+    for (size_t i = 0; i < rows * cols; i++)
+        dst[i] = xlns162fp(src[i]);
+}
+
 /*END OF PORTABLE CODE THAT DEPENDS ON <math.h>*/
 
 
