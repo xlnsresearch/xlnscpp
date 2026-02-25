@@ -1,0 +1,37 @@
+# Build artifacts
+*.o
+*.a
+*.out
+
+# Compiled test binaries
+xlns16test
+xlns16funtest
+xlns16_new_functions_test
+time16test
+sb16
+db16
+sbmit16
+dbmit16
+xlns32test
+xlns32funtest
+xlns32_new_functions_test
+xlnsbothtest
+
+# Build directory
+build/
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Generated compilation database
+compile_commands.json
