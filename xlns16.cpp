@@ -616,6 +616,30 @@ inline void xlns16_softmax(const xlns16 *a, xlns16 *c, size_t n) {
         c[i] = xlns16_div(c[i], total);
 }
 
+
+// Layer normalization: (x - mean) / sqrt(var + eps) * gamma + beta
+inline void xlns16_layernorm(const xlns16 *x, xlns16 *out,
+                       const xlns16 *gamma, const xlns16 *beta,
+                       size_t n, float eps) {
+    // compute mean
+    xlns16 mean = xlns16_sum(x, n);
+    mean = xlns16_div(mean, fp2xlns16((float)n));
+    // compute variance
+    xlns16 var = xlns16_zero;
+    for (size_t i = 0; i < n; i++) {
+        xlns16 diff = xlns16_sub(x[i], mean);
+        var = xlns16_add(var, xlns16_mul(diff, diff));
+    }
+    var = xlns16_div(var, fp2xlns16((float)n));
+    // normalize
+    xlns16 inv_std = fp2xlns16(1.0f / sqrtf(xlns162fp(var) + eps));
+    for (size_t i = 0; i < n; i++) {
+        out[i] = xlns16_mul(xlns16_sub(x[i], mean), inv_std);
+        if (gamma) out[i] = xlns16_mul(out[i], gamma[i]);
+        if (beta)  out[i] = xlns16_add(out[i], beta[i]);
+    }
+}
+
 /*END OF PORTABLE CODE THAT DEPENDS ON <math.h>*/
 
 
