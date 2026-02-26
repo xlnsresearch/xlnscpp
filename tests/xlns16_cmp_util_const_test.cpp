@@ -3,7 +3,7 @@
 // Usage:  g++ -std=c++11 -O2 xlns16_cmp_util_const_test.cpp -o xlns16_cmp_util_const_test -lm && ./xlns16_cmp_util_const_test
 
 #define xlns16_alt
-#include "xlns16.cpp"
+#include "../xlns16.cpp"
 
 #include <cstdio>
 #include <cmath>
