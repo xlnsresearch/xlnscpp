@@ -210,6 +210,39 @@ void test_constants() {
     printf("\n");
 }
 
+// -----------------------------------------------------------
+//  Overflow: test via extreme mul/div that trigger overflow
+// -----------------------------------------------------------
+void test_overflow() {
+    printf("--- xlns32_overflow (via extreme mul/div) ---\n");
+    printf("  operation                        got_hex       expected_hex    result         match\n");
+
+    // Construct xlns32 values with near-max log magnitude to force overflow
+    xlns32 huge_pos  = 0x7F000000;   // very large positive
+    xlns32 huge_neg  = 0xFF000000;   // very large negative
+    xlns32 tiny_pos  = 0x01000000;   // very small positive
+
+    struct { const char *label; xlns32 a; xlns32 b; bool is_mul; xlns32 expected; const char *exp_tag; } cases[] = {
+        { "huge * huge  (overflow)",      huge_pos, huge_pos, true,  0x7FFFFFFF, "overflow->max"  },
+        { "-huge * huge (overflow)",      huge_neg, huge_pos, true,  0xFFFFFFFF, "overflow->max"  },
+        { "tiny / huge  (underflow)",     tiny_pos, huge_pos, false, 0x00000000, "underflow->0"   },
+        { "huge / tiny  (overflow)",      huge_pos, tiny_pos, false, 0x7FFFFFFF, "overflow->max"  },
+        { "2 * 4        (normal)",        fp2xlns32(2.0f), fp2xlns32(4.0f), true,  fp2xlns32(8.0f), "normal" },
+        { "8 / 2        (normal)",        fp2xlns32(8.0f), fp2xlns32(2.0f), false, fp2xlns32(4.0f), "normal" },
+    };
+
+    for (auto& c : cases) {
+        xlns32 result = c.is_mul ? xlns32_mul(c.a, c.b) : xlns32_div(c.a, c.b);
+        const char *got_tag =
+            (result == 0x00000000 || result == 0x80000000) ? "underflow->0" :
+            ((result & xlns32_logmask) == xlns32_logmask)  ? "overflow->max" : "normal";
+        printf("  %-32s  0x%08X    0x%08X  %-14s %s\n",
+               c.label, (unsigned int)result, (unsigned int)c.expected,
+               got_tag, (result == c.expected) ? "yes" : "NO");
+    }
+    printf("\n");
+}
+
 int main() {
     printf("=============================================================\n");
     printf("  xlns32 comparisons / utility / constants test              \n");
@@ -221,6 +254,7 @@ int main() {
     test_copysign();
     test_canon();
     test_sign();
+    test_overflow();
     test_constants();
 
     printf("All tests done.\n");

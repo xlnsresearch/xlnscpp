@@ -207,6 +207,40 @@ void test_constants() {
     printf("\n");
 }
 
+// -----------------------------------------------------------
+//  Overflow: test via extreme mul/div that trigger overflow
+// -----------------------------------------------------------
+void test_overflow() {
+    printf("--- xlns16_overflow (via extreme mul/div) ---\n");
+    printf("  operation                    got_hex    expected_hex   result         match\n");
+
+    // Construct xlns16 values with near-max log magnitude to force overflow
+    xlns16 huge_pos  = 0x7F00;   // very large positive
+    xlns16 huge_neg  = 0xFF00;   // very large negative (sign bit set)
+    xlns16 tiny_pos  = 0x0100;   // very small positive
+
+    // expected_hex: overflow => sign|logmask, underflow => sign|0
+    struct { const char *label; xlns16 a; xlns16 b; bool is_mul; xlns16 expected; const char *exp_tag; } cases[] = {
+        { "huge * huge  (overflow)",    huge_pos, huge_pos, true,  0x7FFF, "overflow->max"  },
+        { "-huge * huge (overflow)",    huge_neg, huge_pos, true,  0xFFFF, "overflow->max"  },
+        { "tiny / huge  (underflow)",   tiny_pos, huge_pos, false, 0x0000, "underflow->0"   },
+        { "huge / tiny  (overflow)",    huge_pos, tiny_pos, false, 0x7FFF, "overflow->max"  },
+        { "2 * 4        (normal)",      fp2xlns16(2.0f), fp2xlns16(4.0f), true,  fp2xlns16(8.0f), "normal" },
+        { "8 / 2        (normal)",      fp2xlns16(8.0f), fp2xlns16(2.0f), false, fp2xlns16(4.0f), "normal" },
+    };
+
+    for (auto& c : cases) {
+        xlns16 result = c.is_mul ? xlns16_mul(c.a, c.b) : xlns16_div(c.a, c.b);
+        const char *got_tag =
+            (result == 0x0000 || result == 0x8000)        ? "underflow->0" :
+            ((result & xlns16_logmask) == xlns16_logmask) ? "overflow->max" : "normal";
+        printf("  %-28s  0x%04X     0x%04X       %-14s %s\n",
+               c.label, (unsigned short)result, (unsigned short)c.expected,
+               got_tag, (result == c.expected) ? "yes" : "NO");
+    }
+    printf("\n");
+}
+
 int main() {
     printf("=============================================================\n");
     printf("  xlns16 comparisons / utility / constants test              \n");
@@ -218,6 +252,7 @@ int main() {
     test_copysign();
     test_canon();
     test_sign();
+    test_overflow();
     test_constants();
 
     printf("All tests done.\n");
