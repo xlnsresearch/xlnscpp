@@ -4,7 +4,7 @@
 // Usage:  g++ -std=c++11 -O2 -I.. xlns16_scalar_vector_test.cpp -o xlns16_scalar_vector_test -lm && ./xlns16_scalar_vector_test
 
 #define xlns16_alt
-#include "xlns16.cpp"
+#include "../xlns16.cpp"
 
 #include <cstdio>
 #include <cmath>
