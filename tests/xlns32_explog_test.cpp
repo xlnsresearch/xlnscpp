@@ -3,7 +3,7 @@
 // Usage:  g++ -std=c++11 -Dxlns32_ideal xlns32_explog_test.cpp -o xlns32_explog_test && ./xlns32_explog_test
 
 #define xlns32_ideal
-#include "xlns32.cpp"
+#include "../xlns32.cpp"
 
 #include <cstdio>
 #include <cmath>

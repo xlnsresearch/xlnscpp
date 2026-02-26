@@ -3,7 +3,7 @@
 // Usage:  g++ -std=c++11 -Dxlns16_alt xlns16_explog_test.cpp -o xlns16_explog_test && ./xlns16_explog_test
 
 #define xlns16_alt
-#include "xlns16.cpp"
+#include "../xlns16.cpp"
 
 #include <cstdio>
 #include <cmath>
