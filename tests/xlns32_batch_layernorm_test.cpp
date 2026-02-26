@@ -3,7 +3,7 @@
 // Usage:  g++ -std=c++11 -O2 -I.. xlns32_batch_layernorm_test.cpp -o xlns32_batch_layernorm_test -lm && ./xlns32_batch_layernorm_test
 
 #define xlns32_alt
-#include "xlns32.cpp"
+#include "../xlns32.cpp"
 
 #include <cstdio>
 #include <cmath>
