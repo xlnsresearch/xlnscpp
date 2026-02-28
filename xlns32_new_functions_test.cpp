@@ -139,15 +139,21 @@ void test_fma() {
     printf("\n");
 }
 
+static float relerr(float got, float expected) {
+    if (fabsf(expected) < 1e-10f) return 0.0f;
+    return fabsf(got - expected) / fabsf(expected) * 100.0f;
+}
+
 void test_square() {
-    printf("=== Testing Square ===\n");
-    xlns32 x = fp2xlns32(5.0f);
-    xlns32 sq = xlns32_square(x);
-    printf("square(5) = %.6f (expected 25.0)\n", xlns322fp(sq));
-    
-    x = fp2xlns32(-3.0f);
-    sq = xlns32_square(x);
-    printf("square(-3) = %.6f (expected 9.0)\n", xlns322fp(sq));
+    printf("=== Testing xlns32_square ===\n");
+    printf("  x          got          expected     err%%\n");
+
+    float xs[] = {0.5f, 1.0f, 2.0f, 3.0f, -3.0f, 4.0f, -5.0f, 0.25f, 7.0f, 10.0f};
+    for (float x : xs) {
+        float got = xlns322fp(xlns32_square(fp2xlns32(x)));
+        float expected = x * x;
+        printf("  %7.2f  %12.7f  %12.7f  %6.4f%%\n", x, got, expected, relerr(got, expected));
+    }
     printf("\n");
 }
 
