@@ -25,6 +25,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <cfloat>  // For FLT_MIN
   //typedef unsigned short xlns16;
   //typedef signed short xlns16_signed;
   #ifdef _WIN32
@@ -265,8 +266,14 @@ inline float xlns162fp(xlns16 x)
 
 xlns16 fp2xlns16(float x)
 {
-	if (x==0.0)
+	// Handle exact zero
+	if (x == 0.0f)
 		return(xlns16_zero);
+	
+	// Handle subnormal numbers - convert to zero
+	if (fabsf(x) < FLT_MIN)
+		return(xlns16_zero);
+	
 	else if (x > 0.0)
 		return xlns16_abs((xlns16_signed) ((log(x)/log(2.0))*xlns16_scale))
 		       ^xlns16_logsignmask;

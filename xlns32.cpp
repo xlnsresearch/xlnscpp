@@ -21,6 +21,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <cfloat>  // For FLT_MIN
 
 // choose long (for 16-bit arch) or int (for 32- or 64-bit arch)
 //   perhaps the following might work in either case:
@@ -291,8 +292,14 @@ xlns32 xlns32_add(xlns32 x, xlns32 y)
 
 xlns32 fp2xlns32(float x)
 {
-	if (x==0.0)
+	// Handle exact zero
+	if (x == 0.0f)
 		return(xlns32_zero);
+	
+	// Handle subnormal numbers - convert to zero
+	if (fabsf(x) < FLT_MIN)
+		return(xlns32_zero);
+	
 	else if (x > 0.0)
 		return xlns32_abs((xlns32_signed) ((log(x)/log(2.0))*xlns32_scale))
 		       ^xlns32_logsignmask;
