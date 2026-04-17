@@ -11,6 +11,8 @@
 //    with xlns16_alt for streamlined + for modern arch w/ ovfl test
 //    with xlns16_table for fast table lookup conversion (fast sb db if xlns_alt and not ideal)
 //      each cvt table 256Kbyte; sb db table each 5Kbyte
+//    with xlns16_altopt for "lpvip" Arnold 2004 with preconditioning
+//      with xlns16_aicasb for "aicas" preconditioning (as in fig 1 of Arnold 2023 AICAS paper)
 // they are based on similar math foundation (Gaussian logs, sb and db) as Python xlns,
 //    but use different internal storage format:
 //    +------+-------------------------+
@@ -182,7 +184,14 @@ inline xlns16 xlns16_add(xlns16 x, xlns16 y)
                           xlns16sbtbl[non_ez_z]; 
      #else
       #ifdef xlns16_altopt
-       xlns16_signed precond = (usedb==0) ? ((-z)>>3) :          // -.125*z 
+       //xlns16_signed precond = (usedb==0) ? ((-z)>>3) :          // -.125*z 
+       xlns16_signed precond = (usedb==0) ? (
+                                            #ifdef xlns16_aicasb
+                                              (z > -(7<<(xlns16_F-1))) ? ((-z)>>3) : (7<<(xlns16_F-4)) 
+                                            #else
+                                              ((-z)>>3)
+                                            #endif
+                                            ) :          // -.125*z 
                 (z < -(2<<xlns16_F)) ? 5<<(xlns16_F-3):        //  0.625
                                 (z >> 2) + (9 << (xlns16_F-3));//  .25*z + 9/8
        xlns16_signed postcond = (z <= -(3<<xlns16_F)) ? 0: 

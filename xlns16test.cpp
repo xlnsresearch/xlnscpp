@@ -8,9 +8,9 @@
  //#define xlns16_ideal
  #define xlns16_alt
  #define xlns16_altopt
+ //#define xlns16_aicasb  
  //#define xlns16_table
 #endif
-  
 
 #include "xlns16.cpp"
 
