@@ -520,7 +520,7 @@ inline void xlns16_batch_sigmoid(const xlns16 *a, xlns16 *c, size_t n) {
 // Tanh
 inline xlns16 xlns16_tanh(xlns16 x) {
     float fx = xlns162fp(x);
-    float result = tanhf(fx);
+    float result = tanh(fx);
     return fp2xlns16(result);
 }
 
@@ -534,7 +534,7 @@ inline void xlns16_batch_tanh(const xlns16 *a, xlns16 *c, size_t n) {
 // SiLU (Swish): x * sigmoid(x) = x / (1 + exp(-x))
 inline xlns16 xlns16_silu(xlns16 x) {
     float fx = xlns162fp(x);
-    float result = fx / (1.0f + expf(-fx));
+    float result = fx / (1.0f + exp(-fx));
     return fp2xlns16(result);
 }
 
@@ -550,7 +550,7 @@ inline xlns16 xlns16_gelu(xlns16 x) {
     float fx = xlns162fp(x);
     const float sqrt_2_over_pi = 0.7978845608f;
     float inner = sqrt_2_over_pi * (fx + 0.044715f * fx * fx * fx);
-    float result = 0.5f * fx * (1.0f + tanhf(inner));
+    float result = 0.5f * fx * (1.0f + tanh(inner));
     return fp2xlns16(result);
 }
 
@@ -566,7 +566,7 @@ inline void xlns16_softmax_exp(const xlns16 *a, xlns16 *c, size_t n) {
     xlns16 maxval = xlns16_max_array(a, n);
     for (size_t i = 0; i < n; i++) {
         float fx = xlns162fp(a[i]) - xlns162fp(maxval);
-        c[i] = fp2xlns16(expf(fx));
+        c[i] = fp2xlns16(exp(fx));
     }
 }
 
@@ -583,28 +583,28 @@ inline xlns16 xlns16_log(xlns16 x) { return xlns16logtbl[x]; }
 // exp(x) - computes e^x
 inline xlns16 xlns16_exp(xlns16 x) {
     float fx = xlns162fp(x);
-    return fp2xlns16(expf(fx));
+    return fp2xlns16(exp(fx));
 }
 
 // log(x) - computes natural log
 inline xlns16 xlns16_log(xlns16 x) {
     float fx = xlns162fp(x);
     if (fx <= 0.0f) return xlns16_zero;
-    return fp2xlns16(logf(fx));
+    return fp2xlns16(log(fx));
 }
 #endif
 
 // exp2(x) - computes 2^x
 inline xlns16 xlns16_exp2(xlns16 x) {
     float fx = xlns162fp(x);
-    return fp2xlns16(exp2f(fx));
+    return fp2xlns16(pow(2.0,fx));
 }
 
 // log2(x) - computes log base 2
 inline xlns16 xlns16_log2(xlns16 x) {
     float fx = xlns162fp(x);
     if (fx <= 0.0f) return xlns16_zero;
-    return fp2xlns16(log2f(fx));
+    return fp2xlns16(log(fx)/log(2.0));
 }
 
 // pow(base, exp) - computes base^exp
@@ -643,7 +643,7 @@ inline void xlns16_layernorm(const xlns16 *x, xlns16 *out,
     }
     var = xlns16_div(var, fp2xlns16((float)n));
     // normalize
-    xlns16 inv_std = fp2xlns16(1.0f / sqrtf(xlns162fp(var) + eps));
+    xlns16 inv_std = fp2xlns16(1.0f / sqrt(xlns162fp(var) + eps));
     for (size_t i = 0; i < n; i++) {
         out[i] = xlns16_mul(xlns16_sub(x[i], mean), inv_std);
         if (gamma) out[i] = xlns16_mul(out[i], gamma[i]);
