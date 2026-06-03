@@ -58,6 +58,8 @@
 #define xlns16_neg_two      0xC080
 #define xlns16_half         0x3F80
 #define xlns16_neg_half     0xBF80
+#define xlns16_pos_inf      0x7FFF
+#define xlns16_neg_inf      0xFFFF
 
 // Basic unary operations (macros for efficiency)
 #define xlns16_sign(x)  ((x) & xlns16_signmask)
@@ -272,10 +274,14 @@ inline float xlns162fp(xlns16 x)
 
 #else
 
-xlns16 fp2xlns16(float x)
+xlns16 fp2xlns16(double x)
 {
-	if (x==0.0)
+	if ((x>-2.938747e-39)&&(x<2.938747e-39))
 		return(xlns16_zero);
+        else if (x> 3.40282286e+38)
+		return(xlns16_pos_inf);
+        else if (x< -3.40282286e+38)
+		return(xlns16_neg_inf);
 	else if (x > 0.0)
 		return xlns16_abs((xlns16_signed) ((log(x)/log(2.0))*xlns16_scale))
 		       ^xlns16_logsignmask;

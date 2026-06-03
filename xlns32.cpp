@@ -65,6 +65,8 @@
 #define xlns32_neg_two      0xC0800000
 #define xlns32_half         0x3F800000
 #define xlns32_neg_half     0xBF800000
+#define xlns32_pos_inf      0x7FFFFFFF
+#define xlns32_neg_inf      0xFFFFFFFF
 
 // Basic unary operations (macros for efficiency)
 #define xlns32_sign(x)  ((x) & xlns32_signmask)
@@ -289,10 +291,14 @@ xlns32 xlns32_add(xlns32 x, xlns32 y)
 
 #include <math.h>
 
-xlns32 fp2xlns32(float x)
+xlns32 fp2xlns32(double x)
 {
-	if (x==0.0)
+	if ((x>-2.938747e-39)&&(x<2.938747e-39))
 		return(xlns32_zero);
+        else if (x> 3.40282286e+38)
+		return(xlns32_pos_inf);
+        else if (x< -3.40282286e+38)
+		return(xlns32_neg_inf);
 	else if (x > 0.0)
 		return xlns32_abs((xlns32_signed) ((log(x)/log(2.0))*xlns32_scale))
 		       ^xlns32_logsignmask;
@@ -300,6 +306,7 @@ xlns32 fp2xlns32(float x)
 		return (((xlns32_signed) ((log(fabs(x))/log(2.0))*xlns32_scale))
 			  |xlns32_signmask)^xlns32_logsignmask;
 }
+
 
 float xlns322fp(xlns32 x)
 {
