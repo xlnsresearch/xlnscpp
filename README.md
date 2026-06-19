@@ -11,6 +11,8 @@ All of the global symbols used begin with either `xlns16` and `xlns32`.  There a
 
 The Python and C++ code that begin with `sb` and `db` work together to test whether ideal and LPVIP Gaussian Log computations in `xlns16.cpp` match what the Python xlns library provides.
 
+For details on efficient summation of `xlns16` arrays, see [summation16bit.MD].
+
 There is a sister repository, xlnscuda, which has related routines that work on CUDA devices.
 
  # References
