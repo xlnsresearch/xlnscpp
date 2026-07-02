@@ -523,20 +523,6 @@ inline void xlns16_batch_sigmoid(const xlns16 *a, xlns16 *c, size_t n) {
     }
 }
 
-// Tanh
-inline xlns16 xlns16_tanh(xlns16 x) {
-    float fx = xlns162fp(x);
-    float result = tanh(fx);
-    return fp2xlns16(result);
-}
-
-// Batch tanh
-inline void xlns16_batch_tanh(const xlns16 *a, xlns16 *c, size_t n) {
-    for (size_t i = 0; i < n; i++) {
-        c[i] = xlns16_tanh(a[i]);
-    }
-}
-
 // SiLU (Swish): x * sigmoid(x) = x / (1 + exp(-x))
 inline xlns16 xlns16_silu(xlns16 x) {
     float fx = xlns162fp(x);
@@ -599,6 +585,20 @@ inline xlns16 xlns16_log(xlns16 x) {
     return fp2xlns16(log(fx));
 }
 #endif
+
+// Tanh: (exp(2x) - 1) / (exp(2x) + 1), (no libm round-trip).
+inline xlns16 xlns16_tanh(xlns16 x) {
+    const xlns16 exp2x = xlns16_exp(xlns16_mul(x, xlns16_two));
+    return xlns16_div(xlns16_sub(exp2x, xlns16_one),
+                       xlns16_add(exp2x, xlns16_one));
+}
+
+// Batch tanh
+inline void xlns16_batch_tanh(const xlns16 *a, xlns16 *c, size_t n) {
+    for (size_t i = 0; i < n; i++) {
+        c[i] = xlns16_tanh(a[i]);
+    }
+}
 
 // exp2(x) - computes 2^x
 inline xlns16 xlns16_exp2(xlns16 x) {
