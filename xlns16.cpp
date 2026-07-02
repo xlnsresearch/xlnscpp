@@ -507,14 +507,19 @@ inline void xlns16_batch_relu(const xlns16 *a, xlns16 *c, size_t n) {
     }
 }
 
-// Sigmoid: 1/(1+exp(-x)) computed via Gaussian log sb
-// log2(sigmoid(x)) = -sb(-x*log2(e)), reusing existing sb table
+// Sigmoid: 1/(1+exp(-x))
+#ifdef xlns16_table
+#include "xlns16sigmoidtbl.h"
+inline xlns16 xlns16_sigmoid(xlns16 x) { return xlns16sigmoidtbl[x]; }
+#else
+// Gaussian log sb fallback when xlns16_table is not defined
 inline xlns16 xlns16_sigmoid(xlns16 x) {
     float fx = xlns162fp(x);
     float z = -fx * 1.4426950408889634f; // -x * log2(e)
     xlns16_signed sz = (xlns16_signed)(z * xlns16_scale + (z >= 0 ? 0.5f : -0.5f));
     return xlns16_logsignmask - xlns16_sb(sz);
 }
+#endif
 
 // Batch sigmoid
 inline void xlns16_batch_sigmoid(const xlns16 *a, xlns16 *c, size_t n) {
