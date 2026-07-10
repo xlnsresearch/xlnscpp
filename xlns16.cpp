@@ -542,22 +542,6 @@ inline void xlns16_batch_silu(const xlns16 *a, xlns16 *c, size_t n) {
     }
 }
 
-// GELU approximation
-inline xlns16 xlns16_gelu(xlns16 x) {
-    float fx = xlns162fp(x);
-    const float sqrt_2_over_pi = 0.7978845608f;
-    float inner = sqrt_2_over_pi * (fx + 0.044715f * fx * fx * fx);
-    float result = 0.5f * fx * (1.0f + tanh(inner));
-    return fp2xlns16(result);
-}
-
-// Batch GELU
-inline void xlns16_batch_gelu(const xlns16 *a, xlns16 *c, size_t n) {
-    for (size_t i = 0; i < n; i++) {
-        c[i] = xlns16_gelu(a[i]);
-    }
-}
-
 // Softmax helper: subtract max for numerical stability, then exp
 inline void xlns16_softmax_exp(const xlns16 *a, xlns16 *c, size_t n) {
     xlns16 maxval = xlns16_max_array(a, n);
@@ -602,6 +586,24 @@ inline xlns16 xlns16_tanh(xlns16 x) {
 inline void xlns16_batch_tanh(const xlns16 *a, xlns16 *c, size_t n) {
     for (size_t i = 0; i < n; i++) {
         c[i] = xlns16_tanh(a[i]);
+    }
+}
+
+// GELU approximation: 0.5 * x * (1 + tanh(sqrt(2/pi) * (x + 0.044715 * x^3)))
+inline xlns16 xlns16_gelu(xlns16 x) {
+    static const xlns16 sqrt2_over_pi = fp2xlns16(0.7978845608);
+    static const xlns16 coeff         = fp2xlns16(0.044715);
+    const xlns16 x3    = xlns16_mul(xlns16_mul(x, x), x);
+    const xlns16 inner = xlns16_mul(sqrt2_over_pi,
+                             xlns16_add(x, xlns16_mul(coeff, x3)));
+    return xlns16_mul(xlns16_mul(xlns16_half, x),
+                      xlns16_add(xlns16_one, xlns16_tanh(inner)));
+}
+
+// Batch GELU
+inline void xlns16_batch_gelu(const xlns16 *a, xlns16 *c, size_t n) {
+    for (size_t i = 0; i < n; i++) {
+        c[i] = xlns16_gelu(a[i]);
     }
 }
 
