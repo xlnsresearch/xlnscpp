@@ -528,11 +528,9 @@ inline void xlns16_batch_sigmoid(const xlns16 *a, xlns16 *c, size_t n) {
     }
 }
 
-// SiLU (Swish): x * sigmoid(x) = x / (1 + exp(-x))
+// SiLU (Swish): x * sigmoid(x)
 inline xlns16 xlns16_silu(xlns16 x) {
-    float fx = xlns162fp(x);
-    float result = fx / (1.0f + exp(-fx));
-    return fp2xlns16(result);
+    return xlns16_mul(x, xlns16_sigmoid(x));
 }
 
 // Batch SiLU
