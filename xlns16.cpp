@@ -627,12 +627,47 @@ inline xlns16 xlns16_pow(xlns16 base, xlns16 exponent) {
 }
 
 
-// Full softmax: exp(a[i]-max) / sum(exp(a[j]-max)), using LNS primitives
-inline void xlns16_softmax(const xlns16 *a, xlns16 *c, size_t n) {
+// Softmax: exp(scale*a[i] - max) / sum(exp(scale*a[j] - max)).
+// a[i] == xlns16_neg_inf is treated as already-excluded and skips the scale
+// multiply (scaling the sentinel could otherwise perturb its bit pattern).
+// c may alias a (in-place): every pass only reads index i before writing
+// index i, and the sum pass runs after all per-element writes complete.
+inline void xlns16_softmax(const xlns16 *a, xlns16 *c, size_t n, xlns16 scale = xlns16_one) {
     if (n == 0) return;
-    xlns16 maxval = xlns16_max_array(a, n);
+    xlns16 maxval = xlns16_neg_inf;
+    for (size_t i = 0; i < n; i++) {
+        xlns16 v = a[i];
+        if (v != xlns16_neg_inf) v = xlns16_mul(v, scale);
+        c[i] = v;
+        if (xlns16_gt(c[i], maxval)) maxval = c[i];
+    }
     for (size_t i = 0; i < n; i++)
-        c[i] = xlns16_exp(xlns16_sub(a[i], maxval));
+        c[i] = xlns16_exp(xlns16_sub(c[i], maxval));
+    xlns16 total = xlns16_sum(c, n);
+    for (size_t i = 0; i < n; i++)
+        c[i] = xlns16_div(c[i], total);
+}
+
+// Masked variant of xlns16_softmax. mask[i] is a pre-converted xlns16 value:
+// xlns16_neg_inf marks a masked-out position (forces the output to
+// xlns16_neg_inf regardless of a[i]/scale), xlns16_zero means "no mask" for
+// that position, anything else is treated as an additive bias (e.g. ALiBi).
+inline void xlns16_softmax_masked(const xlns16 *a, const xlns16 *mask, xlns16 *c,
+                                   size_t n, xlns16 scale = xlns16_one) {
+    if (n == 0) return;
+    xlns16 maxval = xlns16_neg_inf;
+    for (size_t i = 0; i < n; i++) {
+        xlns16 v = a[i];
+        if (v != xlns16_neg_inf) {
+            v = xlns16_mul(v, scale);
+            if (mask[i] == xlns16_neg_inf) v = xlns16_neg_inf;
+            else if (!xlns16_is_zero(mask[i])) v = xlns16_add(v, mask[i]);
+        }
+        c[i] = v;
+        if (xlns16_gt(c[i], maxval)) maxval = c[i];
+    }
+    for (size_t i = 0; i < n; i++)
+        c[i] = xlns16_exp(xlns16_sub(c[i], maxval));
     xlns16 total = xlns16_sum(c, n);
     for (size_t i = 0; i < n; i++)
         c[i] = xlns16_div(c[i], total);
