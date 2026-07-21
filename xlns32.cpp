@@ -642,12 +642,47 @@ inline xlns32 xlns32_pow(xlns32 base, xlns32 exponent) {
 
 
 
-// Full softmax: exp(a[i]-max) / sum(exp(a[j]-max)), using LNS primitives
-inline void xlns32_softmax(const xlns32 *a, xlns32 *c, size_t n) {
+// Softmax: exp(scale*a[i] - max) / sum(exp(scale*a[j] - max)).
+// a[i] == xlns32_neg_inf is treated as already-excluded and skips the scale
+// multiply (scaling the sentinel could otherwise perturb its bit pattern).
+// c may alias a (in-place): every pass only reads index i before writing
+// index i, and the sum pass runs after all per-element writes complete.
+inline void xlns32_softmax(const xlns32 *a, xlns32 *c, size_t n, xlns32 scale = xlns32_one) {
     if (n == 0) return;
-    xlns32 maxval = xlns32_max_array(a, n);
+    xlns32 maxval = xlns32_neg_inf;
+    for (size_t i = 0; i < n; i++) {
+        xlns32 v = a[i];
+        if (v != xlns32_neg_inf) v = xlns32_mul(v, scale);
+        c[i] = v;
+        if (xlns32_gt(c[i], maxval)) maxval = c[i];
+    }
     for (size_t i = 0; i < n; i++)
-        c[i] = xlns32_exp(xlns32_sub(a[i], maxval));
+        c[i] = xlns32_exp(xlns32_sub(c[i], maxval));
+    xlns32 total = xlns32_sum(c, n);
+    for (size_t i = 0; i < n; i++)
+        c[i] = xlns32_div(c[i], total);
+}
+
+// Masked variant of xlns32_softmax. mask[i] is a pre-converted xlns32 value:
+// xlns32_neg_inf marks a masked-out position (forces the output to
+// xlns32_neg_inf regardless of a[i]/scale), xlns32_zero means "no mask" for
+// that position, anything else is treated as an additive bias (e.g. ALiBi).
+inline void xlns32_softmax_masked(const xlns32 *a, const xlns32 *mask, xlns32 *c,
+                                   size_t n, xlns32 scale = xlns32_one) {
+    if (n == 0) return;
+    xlns32 maxval = xlns32_neg_inf;
+    for (size_t i = 0; i < n; i++) {
+        xlns32 v = a[i];
+        if (v != xlns32_neg_inf) {
+            v = xlns32_mul(v, scale);
+            if (mask[i] == xlns32_neg_inf) v = xlns32_neg_inf;
+            else if (!xlns32_is_zero(mask[i])) v = xlns32_add(v, mask[i]);
+        }
+        c[i] = v;
+        if (xlns32_gt(c[i], maxval)) maxval = c[i];
+    }
+    for (size_t i = 0; i < n; i++)
+        c[i] = xlns32_exp(xlns32_sub(c[i], maxval));
     xlns32 total = xlns32_sum(c, n);
     for (size_t i = 0; i < n; i++)
         c[i] = xlns32_div(c[i], total);
