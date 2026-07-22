@@ -6,11 +6,17 @@
 
 `xlns16_vec_dot(a,b,n)` returns the `xlns16` dot product of the `xlns16` arrays, `a` and `b`.
 
-`xlns16_softmax(a,c,n)` computes the softmax of `a` and outputs it in `c`. 
+`xlns16_softmax(a,c,n,scale=xlns16_one)` computes
+the softmax of `a` and outputs it in `c`.
+
+`xlns16_softmax_masked(a,mask,c,n,scale=xlns16_one)` is the same after applying
+`mask`. Each `mask[i]` is a pre-converted `xlns16` value: `xlns16_neg_inf`
+hard-excludes that position, `xlns16_zero` is a no-op, anything else is an
+additive bias (e.g. ALiBi).
 
 `xlns16_layernorm(x,out,gamma,beta,n,eps)` computes the layernorm of `x` as `out`.
 
-The above are implemented sequentially using `xlns16_add`.  A similar set of operations are available in `xlns32.cpp`
+The above are implemented sequentially using `xlns16_add`.  A similar set of operations are available in `xlns32.cpp`.
 
 The problem with the above is that when the `xlns16` array being summed is long, it is likely the accumulator will become stuck at a highly incorrect value because the absolute value of the partial sum is much larger that the individual element being added.  In such a case, the most accurate result that `xlns16_add` can return is the unchanged value of the partial sum.  To overcome this, one could sum such `xlns16` values using an `xlns32` accumulator, but that is very expensive.  
 
@@ -20,7 +26,11 @@ Other alternatives are provided that are (on average) more accurate the `xlns16`
 
 `xlns16_vec_dot_lpvip32(a,b,n)` 
 
-`xlns16_softmax_lpvip32(a,c,n)` 
+`xlns16_softmax_lpvip32(a,c,n,scale=xlns16_one)` and
+`xlns16_softmax_masked_lpvip32(a,mask,c,n,scale=xlns16_one)` —
+same API and control flow as the xlns16 softmax pair above. Scale, mask bias,
+and max-subtraction use plain `xlns16` ops; only the normalization sum uses
+`xlns16_sum_lpvip32`.
 
 `xlns16_layernorm_lpvip32(x,out,gamma,beta,n,eps)` 
 
@@ -32,7 +42,11 @@ it is less effective when the sum is near zero (catastrophic cancelation).   The
 
 `xlns16_vec_dot_monte(a,b,n)` 
 
-`xlns16_softmax_monte(a,c,n)` 
+`xlns16_softmax_monte(a,c,n,scale=xlns16_one)` and
+`xlns16_softmax_masked_monte(a,mask,c,n,scale=xlns16_one)` —
+same API and control flow as the xlns16 softmax pair. Scale, mask bias, and
+max-subtraction use plain `xlns16` ops; only the normalization sum uses
+`xlns16_sum_monte`.
 
 `xlns16_layernorm_monte(x,out,gamma,beta,n,eps)` 
 
