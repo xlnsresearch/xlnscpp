@@ -674,6 +674,22 @@ inline void xlns16_softmax_masked(const xlns16 *a, const xlns16 *mask, xlns16 *c
 }
 
 
+// RMSNorm: dst[i] = x[i] / sqrt(mean(x^2) + eps).
+// Fully LNS-native (uses xlns16_sqrt / xlns16_recip; unlike xlns16_layernorm,
+// which takes inv_std through float). dst may alias x (in-place): the sum-of-
+// squares pass completes before any writes; the scale pass only reads index i
+// before writing index i.
+inline void xlns16_rms_norm(const xlns16 *x, xlns16 *dst, size_t n, xlns16 eps) {
+    if (n == 0) return;
+    xlns16 sum_sq = xlns16_zero;
+    for (size_t i = 0; i < n; i++)
+        sum_sq = xlns16_add(sum_sq, xlns16_square(x[i]));
+    xlns16 mean = xlns16_mul(sum_sq, fp2xlns16(1.0f / (float)n));
+    xlns16 inv_rms = xlns16_recip(xlns16_sqrt(xlns16_add(mean, eps)));
+    for (size_t i = 0; i < n; i++)
+        dst[i] = xlns16_mul(x[i], inv_rms);
+}
+
 // Layer normalization: (x - mean) / sqrt(var + eps) * gamma + beta
 inline void xlns16_layernorm(const xlns16 *x, xlns16 *out,
                        const xlns16 *gamma, const xlns16 *beta,
