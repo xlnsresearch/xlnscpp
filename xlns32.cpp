@@ -115,11 +115,11 @@ inline xlns32 xlns32_div(xlns32 x, xlns32 y)
   #define xlns32_sb xlns32_sb_ideal
   #define xlns32_db xlns32_db_ideal
   #include <math.h>
-  inline xlns32 xlns32_sb_ideal(xlns32 z)
+  inline xlns32 xlns32_sb_ideal(xlns32_signed z)
   {
 	return ((xlns32) ((log(1+ pow(2.0, ((double) z) / xlns32_scale) )/log(2.0))*xlns32_scale+.5));
   }
-  inline xlns32 xlns32_db_ideal(xlns32 z)
+  inline xlns32 xlns32_db_ideal(xlns32_signed z)
   {
 	return ((xlns32_signed) ((log( pow(2.0, ((double) z) / xlns32_scale) - 1 )/log(2.0))*xlns32_scale+.5));
   }
