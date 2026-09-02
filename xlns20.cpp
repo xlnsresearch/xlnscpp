@@ -1,5 +1,5 @@
-// 20-bit XLNS for C++
-// copyright 1999-2025 Mark G. Arnold
+// 20-bit XLNS for C++  ... under development 
+// copyright 1999-2026 Mark G. Arnold
 // these routines 
 //    demonstrated linear interpolation and cotransformation (not xlns32-ideal)
 //    ran on 16-bit Turbo C/C++ (I think xlns32_arch16 revives that code)
