@@ -1,4 +1,4 @@
-// 32-bit XLNS for C++
+// 20-bit XLNS for C++
 // copyright 1999-2025 Mark G. Arnold
 // these routines 
 //    demonstrated linear interpolation and cotransformation (not xlns32-ideal)
@@ -7,13 +7,14 @@
 // they were ported to Linux gcc and g++ around 2015 on 32-bit x86
 // they were ported again for 64-bit arch in 2025, with the xlns32_ideal option
 // they were modified with xlns32_alt for streamlined + on modern arch w/ ovfl detect 
+// they were modified for 20-bit within 32-bit word
 // they are based on similar math foundation (Gaussian logs, sb and db) as Python xlns,
 //    but use different internal storage format:
 //    +------+-------------------------+
 //    | sign | int(log2) . frac(log2)  |
 //    +------+-------------------------+
 //    the int(log2) is not twos complement; it is offset (logsignmask XORed)
-//    for the 32-bit format in this file, this is roughly similar to IEEE 754 float32
+//    for the 32-bit format in this file, this is roughly similar to Google 
 //    there is an exact representation of 0.0, but no subnormals or NaNs
 
 //#define xlns32_arch16
