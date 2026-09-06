@@ -1,4 +1,4 @@
-// 20-bit XLNS for C++  ... under development 
+// 32-bit XLNS for C++  ... optional xlns32_F11 under development in xlns20.cpp
 // copyright 1999-2026 Mark G. Arnold
 // these routines 
 //    demonstrated linear interpolation and cotransformation (not xlns32-ideal)
@@ -7,14 +7,16 @@
 // they were ported to Linux gcc and g++ around 2015 on 32-bit x86
 // they were ported again for 64-bit arch in 2025, with the xlns32_ideal option
 // they were modified with xlns32_alt for streamlined + on modern arch w/ ovfl detect 
-// they were modified for 20-bit within 32-bit word
+// they were modified in 2026 for optional xlns32_F11: 20-bit(F=11) within 32-bit word
+//    both cases (default F=23 and new F=11), exponent ranges similar to float
+//    other cases 7 < F < 23 could be created by defining constants and tables
 // they are based on similar math foundation (Gaussian logs, sb and db) as Python xlns,
 //    but use different internal storage format:
 //    +------+-------------------------+
 //    | sign | int(log2) . frac(log2)  |
 //    +------+-------------------------+
 //    the int(log2) is not twos complement; it is offset (logsignmask XORed)
-//    for the 20-bit format in this file, this is roughly similar to Google 
+//    for the 32-bit format in this file, this is roughly similar to float 
 //    there is an exact representation of 0.0, but no subnormals or NaNs
 
 //#define xlns32_arch16
@@ -28,6 +30,7 @@
 //     typedef u_int32_t xlns32;
 //     typedef int32_t xlns32_signed;
 
+#ifdef xlns32_F11
 #ifdef xlns32_arch16
   typedef unsigned long xlns32;
   typedef signed long xlns32_signed;
@@ -40,6 +43,15 @@
   #define xlns32_sqrtmask      0x20000L
   #define xlns32_esszer        0x0cfa0L
   #define xlns32_canonshift    19
+
+  #define xlns32_one          0x40000L
+  #define xlns32_neg_one      0xC0000L
+  #define xlns32_two          0x40800L
+  #define xlns32_neg_two      0xC0800L
+  #define xlns32_half         0x3F800L
+  #define xlns32_neg_half     0xBF800L
+  #define xlns32_pos_inf      0x7FFFFL
+  #define xlns32_neg_inf      0xFFFFFL
 #else
   typedef unsigned int xlns32;
   typedef signed int xlns32_signed;
@@ -52,22 +64,120 @@
   #define xlns32_sqrtmask      0x20000
   #define xlns32_esszer        0x0cfa0
   #define xlns32_canonshift    19
-#endif
 
-// Useful constant values (pre-computed LNS representations)
+  #define xlns32_one          0x40000
+  #define xlns32_neg_one      0xC0000
+  #define xlns32_two          0x40800
+  #define xlns32_neg_two      0xC0800
+  #define xlns32_half         0x3F800
+  #define xlns32_neg_half     0xBF800
+  #define xlns32_pos_inf      0x7FFFF
+  #define xlns32_neg_inf      0xFFFFF
+
+  #define xlns32_tablesize     (4096*3+1000)//??
+  #define xlns32_zhmask        0x0fff00L
+  #define xlns32_zlmask        0x000ffL
+  #define xlns32_zhshift       8
+
+  #ifdef xlns32_ideal
+  #else
+   #define xlns32_db0shift      14
+   #define xlns32_db1shift      7
+   #define xlns32_db0mask       0x0fc000L
+   #define xlns32_db1mask       0x03f80L
+   #define xlns32_db2mask       0x0007fL
+   #define xlns32_db0size       128
+   #define xlns32_db1size       128
+   #define xlns32_db2size       64
+  #endif
+#endif
+#else //default F=23 that has worked since 1999
+#ifdef xlns32_arch16
+  typedef unsigned long xlns32;
+  typedef signed long xlns32_signed;
+  #define xlns32_zero          0x00000000L
+  #define xlns32_scale         0x00800000L
+  #define xlns32_logmask       0x7fffffffL
+  #define xlns32_signmask      0x80000000L
+  #define xlns32_logsignmask   0x40000000L
+  #define xlns32_canonmask     0x80000000L
+  #define xlns32_sqrtmask      0x20000000L
+  #define xlns32_esszer        0x0cfa0000L
+  #define xlns32_canonshift    31
+
+  #define xlns32_one          0x40000000L
+  #define xlns32_neg_one      0xC0000000L
+  #define xlns32_two          0x40800000L
+  #define xlns32_neg_two      0xC0800000L
+  #define xlns32_half         0x3F800000L
+  #define xlns32_neg_half     0xBF800000L
+  #define xlns32_pos_inf      0x7FFFFFFFL
+  #define xlns32_neg_inf      0xFFFFFFFFL
+
+  #ifdef xlns32_ideal
+  #else
+    #define xlns32_tablesize     (4096*3+1000)
+    #define xlns32_zhmask        0x0fffc000L
+    #define xlns32_zlmask        0x00003fffL
+    #define xlns32_zhshift       14
+
+    #define xlns32_db0shift      19
+    #define xlns32_db1shift      10
+    #define xlns32_db0mask       0x0ff80000L
+    #define xlns32_db1mask       0x0007fc00L
+    #define xlns32_db2mask       0x000003ffL
+    #define xlns32_db0size       512
+    #define xlns32_db1size       512
+    #define xlns32_db2size       1024
+  #endif
+#else
+  typedef unsigned int xlns32;
+  typedef signed int xlns32_signed;
+  #define xlns32_zero          0x00000000
+  #define xlns32_scale         0x00800000
+  #define xlns32_logmask       0x7fffffff
+  #define xlns32_signmask      0x80000000
+  #define xlns32_logsignmask   0x40000000
+  #define xlns32_canonmask     0x80000000
+  #define xlns32_sqrtmask      0x20000000
+  #define xlns32_esszer        0x0cfa0000
+  #define xlns32_canonshift    31
+
+  #define xlns32_one          0x40000000
+  #define xlns32_neg_one      0xC0000000
+  #define xlns32_two          0x40800000
+  #define xlns32_neg_two      0xC0800000
+  #define xlns32_half         0x3F800000
+  #define xlns32_neg_half     0xBF800000
+  #define xlns32_pos_inf      0x7FFFFFFF
+  #define xlns32_neg_inf      0xFFFFFFFF
+
+  #ifdef xlns32_ideal
+  #else
+    #define xlns32_tablesize     (4096*3+1000)
+    #define xlns32_zhmask        0x0fffc000
+    #define xlns32_zlmask        0x00003fff
+    #define xlns32_zhshift       14
+
+    #define xlns32_db0shift      19
+    #define xlns32_db1shift      10
+    #define xlns32_db0mask       0x0ff80000
+    #define xlns32_db1mask       0x0007fc00
+    #define xlns32_db2mask       0x000003ff
+    #define xlns32_db0size       512
+    #define xlns32_db1size       512
+    #define xlns32_db2size       1024
+  #endif
+#endif
+#endif
+// Useful constant values (pre-computed LNS representations) introduced 2026
 // xlns32_one:     log2(1.0) = 0, so internal = 0 ^ logsignmask = 0x40000000
 // xlns32_two:     log2(2.0) = 1, scaled = 0x00800000, internal = 0x00800000 ^ 0x40000000 = 0x40800000
 // xlns32_half:    log2(0.5) = -1, scaled = -0x00800000 = 0xFF800000 (as signed), 
 //                 but we use abs and XOR: internal = 0x3F800000
 // xlns32_neg_one: same as xlns32_one but with sign bit set
-#define xlns32_one          0x40000
-#define xlns32_neg_one      0xC0000
-#define xlns32_two          0x40800
-#define xlns32_neg_two      0xC0800
-#define xlns32_half         0x3F800
-#define xlns32_neg_half     0xBF800
-#define xlns32_pos_inf      0x7FFFF
-#define xlns32_neg_inf      0xFFFFF
+
+
 
 // Basic unary operations (macros for efficiency)
 #define xlns32_sign(x)  ((x) & xlns32_signmask)
@@ -128,19 +238,6 @@ inline xlns32 xlns32_div(xlns32 x, xlns32 y)
   #define xlns32_sb xlns32_sb_macro
   #define xlns32_db xlns32_dbtrans3
 
-#define xlns32_tablesize     (4096*3+1000)//??
-#define xlns32_zhmask        0x0fff00L
-#define xlns32_zlmask        0x000ffL
-#define xlns32_zhshift       8
-
-#define xlns32_db0shift      14
-#define xlns32_db1shift      7
-#define xlns32_db0mask       0x0fc000L
-#define xlns32_db1mask       0x03f80L
-#define xlns32_db2mask       0x0007fL
-#define xlns32_db0size       128
-#define xlns32_db1size       128
-#define xlns32_db2size       64
 
 #include "xlns32tbl.h"
 
@@ -1057,3 +1154,4 @@ inline xlns32_float abs(xlns32_float x)
 	result.x = xlns32_abs(x.x); 
 	return result; 
 }
+
