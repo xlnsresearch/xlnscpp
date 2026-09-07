@@ -6,7 +6,7 @@
 // they were ported to Linux gcc and g++ around 2015 on 32-bit x86
 // they were ported again for 64-bit arch in 2025, with the xlns32_ideal option
 // they were modified with xlns32_alt for streamlined + on modern arch w/ ovfl detect 
-// they were modified in 2026 for optional xlns32_F11: 20-bit(F=11) within 32-bit word
+// they were modified in 2026 for optional xlns32F11.h: 20-bit(F=11) within 32-bit word
 //    both cases (default F=23 and new F=11), exponent ranges similar to float
 //    other cases 7 < F < 23 could be created by defining constants and tables
 // they are based on similar math foundation (Gaussian logs, sb and db) as Python xlns,
@@ -29,13 +29,8 @@
 //     typedef u_int32_t xlns32;
 //     typedef int32_t xlns32_signed;
 
-//#ifdef xlns32_F11
-// #include "xlns32F11.h"
-//#else //default F=23 that has worked since 1999
-// #include "xlns32F23.h"
-//#endif
-
 #ifdef xlns32_zero
+                        //if a header like "xlns32F11.h" defined already, do nothing
 #else
  #include "xlns32F23.h" //default F=23 that has worked since 1999
 #endif
