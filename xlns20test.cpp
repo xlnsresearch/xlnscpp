@@ -4,8 +4,8 @@
 #include <iostream>
 //uncomment for ideal sb and db:
 #define xlns32_ideal
-#define xlns32_F11
-#include "xlns20.cpp"
+#include "xlns32F11.h"
+#include "xlns21.cpp"
 
 void test1fp()
 {
