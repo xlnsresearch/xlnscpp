@@ -15,7 +15,7 @@
 //    | sign | int(log2) . frac(log2)  |
 //    +------+-------------------------+
 //    the int(log2) is not twos complement; it is offset (logsignmask XORed)
-//    for the 32-bit format in this file, this is roughly similar to float 
+//    for the 32-bit F=23 default format in this file, this is roughly similar to float 
 //    there is an exact representation of 0.0, but no subnormals or NaNs
 
 //#define xlns32_arch16
