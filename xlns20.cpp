@@ -1,3 +1,4 @@
+// XLNS32  (32-bit storage; revised 2026 for variable precision)
 // copyright 1999-2026 Mark G. Arnold
 // these routines 
 //    demonstrated linear interpolation and cotransformation (not xlns32-ideal)
@@ -6,9 +7,17 @@
 // they were ported to Linux gcc and g++ around 2015 on 32-bit x86
 // they were ported again for 64-bit arch in 2025, with the xlns32_ideal option
 // they were modified with xlns32_alt for streamlined + on modern arch w/ ovfl detect 
-// they were modified in 2026 for optional xlns32F11.h: 20-bit(F=11) within 32-bit word
-//    both cases (default F=23 and new F=11), exponent ranges similar to float
+// they were extended by GSoC contributors in 2025-
+// they were modified by MGA in 2026 for optional 
+//          xlns32F9.h:  18-bit(F=9)within 32-bit word, 2-table cotran
+//          xlns32F11.h: 20-bit(F=11)within 32-bit word, 2-table cotran
+//          xlns32F13.h: 22-bit(F=13)within 32-bit word, 2-table cotran
+//          xlns32F15.h: 24-bit(F=15)within 32-bit word, 2-table cotran
+//    all cases (default F=23 and new F=9,11,13,15), exponent range like float
 //    other cases 7 < F < 23 could be created by defining constants and tables
+//       cases with different exponent range possible, but some functions
+//       like xlns322fp and fp2xlns32 would need modification
+//    During development, this code was in the now deprecated xlns20.cpp
 // they are based on similar math foundation (Gaussian logs, sb and db) as Python xlns,
 //    but use different internal storage format:
 //    +------+-------------------------+
@@ -16,6 +25,7 @@
 //    +------+-------------------------+
 //    the int(log2) is not twos complement; it is offset (logsignmask XORed)
 //    for the 32-bit F=23 default format in this file, this is roughly similar to float 
+//    for lower precision formats, high bits in 32-bit word zero padded
 //    there is an exact representation of 0.0, but no subnormals or NaNs
 
 //#define xlns32_arch16
@@ -49,7 +59,7 @@
 #define xlns32_abs(x)   ((x) & xlns32_logmask)
 #define xlns32_recip(x) (xlns32_sign(x)|xlns32_abs((~x)+1))
 #define xlns32_sqrt(x)   (xlns32_abs(((xlns32_signed)((x)<<1))/4)^xlns32_sqrtmask)
-#define xlns32_canon(x) ((x)^(-((x)>>xlns32_canonshift)|xlns32_signmask))
+#define xlns32_canon(x) (xlns32_neg_inf & ((x)^(-((x)>>xlns32_canonshift)|xlns32_signmask)))
 
 // Square: x^2 (efficient in LNS: double the log)
 #define xlns32_square(x) xlns32_mul((x), (x))
@@ -86,27 +96,28 @@ inline xlns32 xlns32_div(xlns32 x, xlns32 y)
                                        :(xlns32_signmask&(x^y))|xlns32_temp;
 }
 
-#ifdef xlns32_ideal
-  #define xlns32_sb xlns32_sb_ideal
-  #define xlns32_db xlns32_db_ideal
-  #include <math.h>
-  inline xlns32 xlns32_sb_ideal(xlns32_signed z)
+#include <math.h>
+
+inline xlns32 xlns32_sb_ideal(xlns32_signed z)
   {
 	return ((xlns32) ((log(1+ pow(2.0, ((double) z) / xlns32_scale) )/log(2.0))*xlns32_scale+.5));
   }
-  inline xlns32 xlns32_db_ideal(xlns32_signed z)
+inline xlns32 xlns32_db_ideal(xlns32_signed z)
   {
 	return ((xlns32_signed) ((log( pow(2.0, ((double) z) / xlns32_scale) - 1 )/log(2.0))*xlns32_scale+.5));
   }
+
+#ifdef xlns32_ideal
+  #define xlns32_sb xlns32_sb_ideal
+  #define xlns32_db xlns32_db_ideal
 #else
+
   #define xlns32_sb xlns32_sb_macro
   #define xlns32_db xlns32_dbtrans3
 
+  xlns32 xlns32_z, xlns32_zh;
 
-
-xlns32 xlns32_z, xlns32_zh;
-
-#include xlns32_filename
+  #include xlns32_filename
 
 #define xlns32_sb_macro(z) \
 (  \
@@ -116,23 +127,32 @@ xlns32 xlns32_z, xlns32_zh;
    +(((xlns32)xlns32_sbhtable[xlns32_zh])<<16)+xlns32_sbltable[xlns32_zh]) \
  +( \
    ( \
-    (0x4000-(xlns32_zlmask&  \
+    ((xlns32_zlmask+1)-(xlns32_zlmask&  \
       ((xlns32_sbltable[xlns32_zh]-xlns32_sbltable[xlns32_zh+1])) \
     )) \
-    *(xlns32_z&xlns32_zlmask)  \
+    *(xlns32_z&xlns32_zlmask) +(1<<(xlns32_zhshift-1)) \
    )>>xlns32_zhshift  \
   )  \
 ) \
 )
 
-//xlns32_signed xlns32_sb(xlns32_signed z)
-//xlns32 xlns32_sb(xlns32 z)
-//{
-//	xlns32 xlns32_z, xlns32_zh;
-//	return xlns32_sb_macro(z);
-//}
+#define xlns32_sb_macro_unround(z) \
+(  \
+((xlns32_zh=(xlns32_z=(z))>>xlns32_zhshift)>=(xlns32_tablesize-1))?xlns32_z: \
+( \
+ ( (xlns32_z&xlns32_zhmask)  \
+   +(((xlns32)xlns32_sbhtable[xlns32_zh])<<16)+xlns32_sbltable[xlns32_zh]) \
+ +( \
+   ( \
+    ((xlns32_zlmask+1)-(xlns32_zlmask&  \
+      ((xlns32_sbltable[xlns32_zh]-xlns32_sbltable[xlns32_zh+1])) \
+    )) \
+    *(xlns32_z&xlns32_zlmask) \
+   )>>xlns32_zhshift  \
+  )  \
+) \
+)
 
-//xlns32_signed xlns32_dbtrans3(xlns32_signed z)
 xlns32 xlns32_dbtrans3(xlns32 z)
 {
 	xlns32 z0,z1,z2,temp2;
@@ -182,6 +202,18 @@ xlns32 xlns32_dbtrans3(xlns32 z)
 		}
 	}
 }
+
+/*
+  xlns32 xlns32_dbtrans3_test(xlns32 z)
+  {
+    xlns32_signed r1,r2;
+    r1 = xlns32_db_ideal(z);
+    r2 = xlns32_dbtrans3(z);
+    if (((r1-r2)>100)||((r2-r1)>100)) 
+      { printf("@z=%08x ",z); }
+    return r2;
+  }
+*/
 
 #endif
 

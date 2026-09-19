@@ -1,11 +1,68 @@
 //some numeric tests of xlns32.cpp; see github.com/xlnsresearch/xlns/examples for a similar python test
+//slightly revised to test various precisions (in deprecated xlns20test.cpp)
 #include <stdio.h>
 #include <stdlib.h>
 #include <iostream>
 //uncomment for ideal sb and db:
-#define xlns32_ideal
-#include "xlns32F11.h"
-#include "xlns21.cpp"
+//#define xlns32_ideal
+
+//uncomment one of following if want other than default F=23
+//#include "xlns32F9.h"
+//#include "xlns32F11.h"
+//#include "xlns32F13.h"
+//#include "xlns32F15.h"
+
+#include "xlns20.cpp" //need to change to xlns32.cpp in final version
+
+
+void test_exh_sb_xlns32()
+{
+	xlns32 one;
+        xlns32_signed approx,ideal;
+	int i,diff;
+        int err[10];
+	one = fp2xlns32(1.0);
+	for (i=0; i<=9; i++)
+                err[i]=0;
+	for (i=1; i<=xlns32_esszer; i++)
+	//for (i=1; i<=xlns32_logmask; i++)
+	{
+		approx = xlns32_sb(i);
+		ideal = xlns32_sb_ideal(i);
+                diff = (approx-ideal > 4) ? 9 : (approx-ideal<-4) ? 0 :
+                       (approx-ideal + 4); 
+                err[diff]++;
+	}
+        printf("sb errs: ");
+	for (i=0; i<=9; i++)
+               printf("%i ",err[i]);
+}
+
+void test_exh_db_xlns32()
+{
+	xlns32 one;
+        xlns32_signed approx,ideal;
+	int i,diff;
+        int err[10];
+	one = fp2xlns32(1.0);
+	for (i=0; i<=9; i++)
+                err[i]=0;
+	for (i=1; i<=xlns32_esszer; i++)
+	//for (i=1; i<=(/*xlns32_db0mask|*/ xlns32_db1mask|xlns32_db2mask); i++)
+	{
+		approx = xlns32_db(i);
+		ideal = xlns32_db_ideal(i);
+                diff = (approx-ideal > 4) ? 9 : (approx-ideal<-4) ? 0 :
+                       (approx-ideal + 4); 
+                err[diff]++;
+	}
+        printf("\ndb errs: ");
+	for (i=0; i<=9; i++)
+               printf("%i ",err[i]);
+        printf("\n");
+}
+
+
 
 void test1fp()
 {
@@ -169,6 +226,8 @@ void test5xlns32()
 		sum = xlns32_add(sum, xlns32_div(val, num));
 		val = xlns32_neg(val);
 		num = xlns32_add(num, two);
+	//printf("test5xlns32 num=%f val=%e 4*sum=%f\n",
+	//	 xlns322fp(num),xlns322fp(val),xlns322fp(xlns32_mul(fp2xlns32(4.0),sum)));
 	}
 	printf("test5xlns32 num=%f val=%e 4*sum=%f\n",
 		 xlns322fp(num),xlns322fp(val),xlns322fp(xlns32_mul(fp2xlns32(4.0),sum)));
@@ -441,7 +500,16 @@ void testcompare()
 int main(void)
 {
 	char ch;
-	printf("xlns32 C++ (32-bit like float) %ld\n",sizeof(xlns32));
+	printf("xlns32 C++ (32-bit like float) %ld",sizeof(xlns32));
+        #ifdef xlns32_ideal
+          printf(" ideal F=%i\n",xlns32_canonshift-8);
+        #else
+          printf(" interpolated F=%i\n",xlns32_canonshift-8);
+        #endif
+        #if xlns32_canonshift != 31
+          test_exh_sb_xlns32();
+          test_exh_db_xlns32();
+        #endif
 
 	testcompare();
 	test5fp();
@@ -465,6 +533,22 @@ int main(void)
 	test4xlns32_float(2000);
 
 	testops();
+
+
+   printf("%f\n",xlns322fp(xlns32_zero     ));
+   printf("%f\n",xlns322fp(xlns32_scale    ));
+   printf("%e\n",xlns322fp(xlns32_logmask   ));
+   printf("%f\n",xlns322fp(xlns32_signmask   ));
+   printf("%f\n",xlns322fp(xlns32_logsignmask ));
+   printf("%f\n",xlns322fp(xlns32_one   ));
+   printf("%f\n",xlns322fp(xlns32_neg_one));
+   printf("%f\n",xlns322fp(xlns32_two   ));
+   printf("%f\n",xlns322fp(xlns32_neg_two));
+   printf("%f\n",xlns322fp(xlns32_half   ));
+   printf("%f\n",xlns322fp(xlns32_neg_half));
+   printf("%e\n",xlns322fp(xlns32_pos_inf ));
+   printf("%e\n",xlns322fp(xlns32_neg_inf  ));
+
 
 	return 1;
 
