@@ -8,7 +8,7 @@
 
 //uncomment one of following if want other than default F=23
 //#include "xlns32F9.h"
-//#include "xlns32F11.h"
+#include "xlns32F11.h"
 //#include "xlns32F13.h"
 //#include "xlns32F15.h"
 
