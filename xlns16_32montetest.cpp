@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <iostream>
 #define xlns32_ideal
-#incluse "xlns32F11.h"
+//#include "xlns32F11.h"
 #include "xlns32.cpp"
 
 //xlns32_aicasb needs to be defined for accurate 32-bit sums using xlns32_add_lpvip
