@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <iostream>
 #define xlns32_ideal
+#incluse "xlns32F11.h"
 #include "xlns32.cpp"
 
 //xlns32_aicasb needs to be defined for accurate 32-bit sums using xlns32_add_lpvip
@@ -82,7 +83,7 @@ float frndtest1xlns32(int limit, float rndfp[])
 	for (i=1; i<=limit; i++)  //scaled down to 100
 	{
 		halfval = fp2xlns16(rndfp[i]);
-		sum = xlns32_add(sum,((xlns32)halfval)<<16);
+		sum = xlns32_add(sum,((xlns32)halfval)<<(xlns32_canonshift-15));
 	}
 	//printf("rndtest1xlns16 sum=%f\n", xlns162fp(sum));
 	return xlns322fp(sum);
@@ -98,7 +99,7 @@ float frndtest1lpvip32(int limit, float rndfp[])
 	for (i=1; i<=limit; i++)  //scaled down to 100
 	{
 		halfval = fp2xlns16(rndfp[i]);
-		sum = xlns32_add_lpvip(sum,((xlns32)halfval)<<16);
+		sum = xlns32_add_lpvip(sum,((xlns32)halfval)<<(xlns32_canonshift-15));
 	}
 	//printf("rndtest1xlns16 sum=%f\n", xlns162fp(sum));
 	return xlns322fp(sum);

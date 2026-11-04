@@ -15,13 +15,9 @@
   }
 #endif
 */
-  // Mitchell's approximation of 2^z for z <= 0. The shift count is computed
-  // from the signed value: with the unsigned type, -(z>>F) is a huge shift
-  // count, which is undefined behaviour, and GCC at -O2 miscompiles it.
   inline xlns32 xlns32_mitch(xlns32 z)
   {
-     const int shift = -(((xlns32_signed)z)>>xlns32_F);
-     return (shift >= 32) ? 0 : (((1<<xlns32_F)+(z&((1<<xlns32_F)-1)))>>shift);
+     return (((1<<xlns32_F)+(z&((1<<xlns32_F)-1)))>>(-(z>>xlns32_F)));
   }
 
 //need to define xlns32_aicasb if xlns32_add_lpvip is to give accurate summation
@@ -68,21 +64,22 @@ inline xlns32 xlns32_add_lpvip(xlns32 x, xlns32 y)
 // Sum of array elements: result = Σ a[i]
 inline xlns16 xlns16_sum_lpvip32(const xlns16 *a, size_t n) {
     if (n == 0) return xlns16_zero;
-    xlns32 sum = ((xlns32)a[0])<<16;
+    xlns32 sum = ((xlns32)a[0])<< (xlns32_canonshift-15);
     for (size_t i = 1; i < n; i++) {
-        sum = xlns32_add_lpvip(sum, ((xlns32)a[i])<<16);
+        sum = xlns32_add_lpvip(sum, ((xlns32)a[i])<<(xlns32_canonshift-15));
     }
-    return sum>>16;
+    return sum>>(xlns32_canonshift-15);
 }
 
 // Vector dot product: result = Σ(a[i] * b[i])
 inline xlns16 xlns16_vec_dot_lpvip32(const xlns16 *a, const xlns16 *b, size_t n) {
     if (n == 0) return xlns16_zero;
-    xlns32 sum = ((xlns32)xlns16_mul(a[0], b[0]))<<16;
+    xlns32 sum = ((xlns32)xlns16_mul(a[0], b[0]))<<
+(xlns32_canonshift-15);
     for (size_t i = 1; i < n; i++) {
-        sum = xlns32_add_lpvip(sum, ((xlns32)xlns16_mul(a[i], b[i]))<<16);
+        sum = xlns32_add_lpvip(sum, ((xlns32)xlns16_mul(a[i], b[i]))<< (xlns32_canonshift-15);
     }
-    return sum>>16;
+    return sum>> (xlns32_canonshift-15);
 }
 
 // Layer normalization: (x - mean) / sqrt(var + eps) * gamma + beta
@@ -96,7 +93,7 @@ inline void xlns16_layernorm_lpvip32(const xlns16 *x, xlns16 *out,
     xlns32 var = xlns32_zero;
     for (size_t i = 0; i < n; i++) {
         xlns16 diff = xlns16_sub(x[i], mean);
-        var = xlns32_add_lpvip(var, ((xlns32)xlns16_mul(diff, diff))<<16);
+        var = xlns32_add_lpvip(var, ((xlns32)xlns16_mul(diff, diff))<< (xlns32_canonshift-15);
     }
     var = xlns32_div(var, fp2xlns32((float)n));
     // normalize
@@ -115,8 +112,8 @@ inline void xlns16_rms_norm_lpvip32(const xlns16 *x, xlns16 *dst, size_t n, xlns
     if (n == 0) return;
     xlns32 sum_sq = xlns32_zero;
     for (size_t i = 0; i < n; i++)
-        sum_sq = xlns32_add_lpvip(sum_sq, ((xlns32)xlns16_square(x[i])) << 16);
-    xlns16 mean = xlns16_mul(sum_sq >> 16, fp2xlns16(1.0f / (float)n));
+        sum_sq = xlns32_add_lpvip(sum_sq, ((xlns32)xlns16_square(x[i])) << (xlns32_canonshift-15);
+    xlns16 mean = xlns16_mul(sum_sq >> (xlns32_canonshift-15), fp2xlns16(1.0f / (float)n));
     xlns16 inv_rms = xlns16_recip(xlns16_sqrt(xlns16_add(mean, eps)));
     for (size_t i = 0; i < n; i++)
         dst[i] = xlns16_mul(x[i], inv_rms);
