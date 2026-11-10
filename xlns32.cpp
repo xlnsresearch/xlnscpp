@@ -522,14 +522,28 @@ inline void xlns32_batch_relu(const xlns32 *a, xlns32 *c, size_t n) {
     }
 }
 
-// Sigmoid: 1/(1+exp(-x)) computed via Gaussian log sb
-// log2(sigmoid(x)) = -sb(-x*log2(e)), reusing existing sb
-inline xlns32 xlns32_sigmoid(xlns32 x) {
+
+#ifdef xlns32_sigmoid_sb
+ // Sigmoid: 1/(1+exp(-x)) computed via Gaussian log sb
+ // log2(sigmoid(x)) = -sb(-x*log2(e)), reusing existing sb
+ inline xlns32 xlns32_sigmoid(xlns32 x) {
     float fx = xlns322fp(x);
     float z = -fx * 1.4426950408889634f; // -x * log2(e)
     xlns32_signed sz = (xlns32_signed)(z * xlns32_scale + (z >= 0 ? 0.5f : -0.5f));
-    return xlns32_logsignmask - xlns32_sb(sz);
-}
+    if (sz > 0)  // xlns32_sb only valid for sz>0
+      return xlns32_logsignmask - xlns32_sb(sz);
+    else
+      return xlns32_logsignmask - sz - xlns32_sb(-sz);
+ }
+#else
+ // Sigmoid: 1 / (1 + exp(-x))
+ // Note: Uses float conversion for exp() then converts back
+ inline xlns32 xlns32_sigmoid(xlns32 x) {
+    float fx = xlns322fp(x);
+    float result = 1.0f / (1.0f + exp(-fx));
+    return fp2xlns32(result);
+ }
+#endif
 
 // Batch sigmoid
 inline void xlns32_batch_sigmoid(const xlns32 *a, xlns32 *c, size_t n) {
