@@ -126,9 +126,13 @@ inline xlns16 xlns16_div(xlns16 x, xlns16 y)
   {
 	return ((xlns16_signed) ((log( pow(2.0, ((double) z) / xlns16_scale) - 1 )/log(2.0))*xlns16_scale+.5));
   }
+  // shift count from the signed value (was a negative shift for every z < 0)
   inline xlns16 xlns16_mitch(xlns16 z)
   {
-     return (((1<<xlns16_F)+(z&((1<<xlns16_F)-1)))>>(-(z>>xlns16_F)));
+     const int zs = (xlns16_signed) z;
+     const int shift = -(zs >> xlns16_F);
+     if ((shift < 0) || (shift >= 16)) return 0;
+     return (xlns16) (((1<<xlns16_F)+(zs&((1<<xlns16_F)-1)))>>shift);
   }
 
   inline xlns16 xlns16_sb_premit_neg(xlns16_signed zi)   //was called premitchnpi(zi): assumes zi<=0
@@ -136,7 +140,8 @@ inline xlns16 xlns16_div(xlns16 x, xlns16 y)
     xlns16 postcond;
     xlns16 z;
     postcond = (zi <= -(3<<xlns16_F))? 0: (zi >= -(3<<(xlns16_F-2))? -1: +1);
-    z = ((zi<<3) + (zi^0xffff) + 16)>>3;
+    // same as xlns16d.cu; the old int expression shifted a negative value left and was 8192 too small
+    z = -((((-zi)<<3) + zi - 8)>>3);
     return (zi==0)?1<<xlns16_F: xlns16_mitch(z) + postcond;
     //return ((zi==0)?1<<xlns16_F: (((1<<xlns16_F)+(z&((1<<xlns16_F)-1)))>>(-(z>>xlns16_F)))+postcond );
   }
@@ -175,6 +180,9 @@ inline xlns16 xlns16_add(xlns16 x, xlns16 y)
     maxxy  = (xl>yl) ? x  : y;
     z = minxyl - (maxxy&xlns16_logmask);
     usedb = xlns16_signmask&(x^y); 
+    // exact cancellation first: the branches below would evaluate log(0)
+    if ((z==0) && usedb)
+       return xlns16_zero;
     #ifdef xlns16_ideal
      float pm1 = usedb ? -1.0 : 1.0;
      adjust = z+((xlns16_signed)(log(pm1+pow(2.0,-((double)z)/xlns16_scale))/log(2.0)*xlns16_scale+.5));

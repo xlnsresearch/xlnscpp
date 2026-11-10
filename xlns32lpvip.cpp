@@ -34,6 +34,9 @@ inline xlns32 xlns32_add_lpvip(xlns32 x, xlns32 y)
     maxxy  = (xl>yl) ? x  : y;
     z = minxyl - (maxxy&xlns32_logmask);
     usedb = xlns32_signmask&(x^y); 
+    // exact cancellation first: xlns32_db_ideal(0) would convert log(0) = -inf to int
+    if ((z==0) && usedb)
+       return xlns32_zero;
        xlns32_signed precond = (usedb==0) ? (
                                             #ifdef xlns32_aicasb
                                               (z > -(7<<(xlns32_F-1))) ? ((-z)>>3) : (7<<(xlns32_F-4)) 
