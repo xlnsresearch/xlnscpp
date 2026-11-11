@@ -17,7 +17,8 @@
 */
   inline xlns32 xlns32_mitch(xlns32 z)
   {
-     return (((1<<xlns32_F)+(z&((1<<xlns32_F)-1)))>>(-(z>>xlns32_F)));
+     const int shift = -(((xlns32_signed)z)>>xlns32_F);
+     return (shift >= 32) ? 0 : (((1<<xlns32_F)+(z&((1<<xlns32_F)-1)))>>shift);
   }
 
 //need to define xlns32_aicasb if xlns32_add_lpvip is to give accurate summation
@@ -34,6 +35,9 @@ inline xlns32 xlns32_add_lpvip(xlns32 x, xlns32 y)
     maxxy  = (xl>yl) ? x  : y;
     z = minxyl - (maxxy&xlns32_logmask);
     usedb = xlns32_signmask&(x^y); 
+    // exact cancellation first: xlns32_db_ideal(0) would convert log(0) = -inf to int
+    if ((z==0) && usedb)
+       return xlns32_zero;
        xlns32_signed precond = (usedb==0) ? (
                                             #ifdef xlns32_aicasb
                                               (z > -(7<<(xlns32_F-1))) ? ((-z)>>3) : (7<<(xlns32_F-4)) 
@@ -77,7 +81,7 @@ inline xlns16 xlns16_vec_dot_lpvip32(const xlns16 *a, const xlns16 *b, size_t n)
     xlns32 sum = ((xlns32)xlns16_mul(a[0], b[0]))<<
 (xlns32_canonshift-15);
     for (size_t i = 1; i < n; i++) {
-        sum = xlns32_add_lpvip(sum, ((xlns32)xlns16_mul(a[i], b[i]))<< (xlns32_canonshift-15);
+        sum = xlns32_add_lpvip(sum, ((xlns32)xlns16_mul(a[i], b[i]))<< (xlns32_canonshift-15));
     }
     return sum>> (xlns32_canonshift-15);
 }
@@ -93,7 +97,7 @@ inline void xlns16_layernorm_lpvip32(const xlns16 *x, xlns16 *out,
     xlns32 var = xlns32_zero;
     for (size_t i = 0; i < n; i++) {
         xlns16 diff = xlns16_sub(x[i], mean);
-        var = xlns32_add_lpvip(var, ((xlns32)xlns16_mul(diff, diff))<< (xlns32_canonshift-15);
+        var = xlns32_add_lpvip(var, ((xlns32)xlns16_mul(diff, diff))<< (xlns32_canonshift-15));
     }
     var = xlns32_div(var, fp2xlns32((float)n));
     // normalize
@@ -112,7 +116,7 @@ inline void xlns16_rms_norm_lpvip32(const xlns16 *x, xlns16 *dst, size_t n, xlns
     if (n == 0) return;
     xlns32 sum_sq = xlns32_zero;
     for (size_t i = 0; i < n; i++)
-        sum_sq = xlns32_add_lpvip(sum_sq, ((xlns32)xlns16_square(x[i])) << (xlns32_canonshift-15);
+        sum_sq = xlns32_add_lpvip(sum_sq, ((xlns32)xlns16_square(x[i])) << (xlns32_canonshift-15));
     xlns16 mean = xlns16_mul(sum_sq >> (xlns32_canonshift-15), fp2xlns16(1.0f / (float)n));
     xlns16 inv_rms = xlns16_recip(xlns16_sqrt(xlns16_add(mean, eps)));
     for (size_t i = 0; i < n; i++)
