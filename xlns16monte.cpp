@@ -39,8 +39,8 @@ inline xlns16 xlns16_monte_modifier(xlns16 x, xlns16 y)
     #endif
 
     //This sometimes returns +/-1 (for |z|>F) based on z (bigger z more prob result!=0) and usedb (+1 for sb;-1 for db)
-    //precond=7/16 for both sb and db; sometimes bigger and sometimes smaller than ideal; good compromise
-    result = (xlns16_randombits>>(16-xlns16_F)) + xlns16_mitch(z + (xlns16_F<<xlns16_F) + (7<<(xlns16_F-4))); // z+F+7/16
+    //precond=15/32 for both sb and db; sometimes bigger and sometimes smaller than ideal; good compromise
+    result = (xlns16_randombits>>(16-xlns16_F)) + xlns16_mitch(z + (xlns16_F<<xlns16_F) + (15<<(xlns16_F-5))); // z+F+15/32
     result = result >> xlns16_F;
     result &= (z < -((xlns16_F)<<xlns16_F));
     if (usedb) 
